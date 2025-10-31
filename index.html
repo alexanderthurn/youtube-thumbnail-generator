@@ -1,0 +1,402 @@
+<html>
+
+<head>
+    <style>
+        img {
+            border: 1px solid black;
+        }
+
+        canvas {
+            background-color: black;
+        }
+
+        .highlight {
+            background-color: green;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div><a href="https://unsplash.com/s/photos/werte?license=free" target="unsplash">Background</a>: <input
+            id="inputBackgroundURL" type="text" size="50" data-force-imageload><input type="file"
+            data-image-target="inputBackgroundURL" /><span id="spanBackgroundPosition"></span><button id="btnPromptBackground" title="Generate with prompt">P</button><span id="spanPromptBackground" style="display:none;"> Prompt: <input id="inputPromptBackground" type="text" size="40" placeholder="Describe background..."><button id="btnGenerateBackground" title="Generate background image">Generate</button></span></div>
+    <div><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">SecondImage</a>: <input
+            id="inputSecondURL" type="text" size="50" data-force-imageload><input type="file"
+            data-image-target="inputSecondURL" /><span id="spanSecondPosition"></span><button id="btnPromptSecond" title="Generate with prompt">P</button><span id="spanPromptSecond" style="display:none;"> Prompt: <input id="inputPromptSecond" type="text" size="40" placeholder="Describe second image..."><button id="btnGenerateSecond" title="Generate second image">Generate</button></span></div>
+    <div>ThirdImage: <input id="inputThirdURL" type="text" size="50" data-force-imageload><input type="file"
+            data-image-target="inputThirdURL" /><span id="spanThirdPosition"></span></div>
+    <div>Pose: <input id="inputPose" step="1" type="number" min="0" max="30" data-force-imageload /><button
+            title="chaos" onclick="randomizeInputByMinMax(inputPose, true); loadImagesAndRender()">c</button><span
+            id="spanPoses"></span><span id="spanPosesPosition"></span></div>
+    <div> Text1: <input id="inputText1" type="text"><span id="spanText1Position"></span></div>
+    <div>Text2: <input id="inputText2" type="text"><span id="spanText2Position"></span></div>
+
+    <button id="btnDownload">Download</button>
+    <a id="btnDeeplink" href="">DeepLink</a>
+    <a id="btnReset" href="?">Reset All</a><br />
+    <canvas width="1280" height="720" id="canvas"></canvas>
+
+    <div id="poseList"></div>
+</body>
+
+<script type="text/javascript">
+    const eId = function (id) { return document.getElementById(id); };
+
+    const posesCount = 28
+    const urlBackground = ''
+    const urlAB = ''
+
+    inputText1.value = 'Welt'
+    inputText2.value = 'Hallo'
+    inputPose.value = Math.floor(Math.random() * posesCount)
+
+    var imgBackground = null
+    var imgLogo = null
+    var imgPose = null
+    var imgSecond = null
+    var imgThird = null
+
+
+    //inputBackgroundURL.value = urlBackground
+    inputSecondURL.value = urlAB
+    inputPose.max = posesCount - 1
+    const ctx = canvas.getContext("2d");
+    const colorBrand = 'rgb(255, 192, 0)'
+    const colorBackground = 'black'
+    const colorLogo = 'black'
+    const paddingBackgroundLogoPixel = 10
+    const imgPoseWidth = canvas.width * 0.5
+
+
+    const saveToURL = function () {
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        document.querySelectorAll('input').forEach((input) => {
+            if (input.type === 'file') {
+
+            } else if (input.type === 'checkbox') {
+                urlParams.set(input.id, input.checked)
+            } else {
+                urlParams.set(input.id, input.value)
+            }
+        })
+
+
+        btnDeeplink.href = '?' + urlParams.toString()
+
+        // window.location.search = urlParams.toString()
+    }
+
+    const loadFromURL = function () {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        document.querySelectorAll('input').forEach((input) => {
+            if (urlParams.get(input.id) !== null) {
+                if (input.type === 'file') {
+
+                } else if (input.type === 'checkbox') {
+                    input.checked = urlParams.get(input.id) === 'true' ? true : false
+                } else {
+                    input.value = urlParams.get(input.id)
+                }
+
+            }
+
+        })
+
+
+    }
+
+    const loadImage = function (src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        })
+    }
+
+
+    const loadImagesAndRender = function () {
+
+        var imageUrls = [
+            'img/logo.svg',
+            'img/poses/' + inputPose.value + '.png'
+        ];
+
+        inputBackgroundURL.value && inputBackgroundURL.value.indexOf('blob22:') !== 0 && imageUrls.push(inputBackgroundURL.value)
+        inputSecondURL.value && inputSecondURL.value.indexOf('blob22:') !== 0 && imageUrls.push(inputSecondURL.value)
+        inputThirdURL.value && inputThirdURL.value.indexOf('blob22:') !== 0 && imageUrls.push(inputThirdURL.value)
+
+        imageUrls = imageUrls.map(url => {
+            if (url.indexOf('unsplash.com') > -1 && url.indexOf('proxyoff') == -1) {
+                return './image.php?url=' + encodeURIComponent(url)
+            } else {
+                return url
+            }
+        })
+
+
+        return Promise.all(imageUrls.map(loadImage)).then(images => {
+            var i = 0
+            imgLogo = images[i++]
+            imgPose = images[i++]
+            if (inputBackgroundURL.value && inputBackgroundURL.value.indexOf('blob22:') !== 0) { imgBackground = images[i++] }
+            if (inputSecondURL.value && inputSecondURL.value.indexOf('blob22:') !== 0) { imgSecond = images[i++] }
+            if (inputThirdURL.value && inputThirdURL.value.indexOf('blob22:') !== 0) { imgThird = images[i++] }
+            render()
+        })
+    }
+
+
+    const drawBackground = function () {
+        // background
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = colorBackground
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore()
+    }
+
+    const drawText1 = function () {
+        // text line 1
+        ctx.save();
+        ctx.font = "64pt Impact"
+        ctx.strokeStyle = 'black'
+        ctx.lineWidth = 4
+        ctx.textAlign = "end"
+        ctx.textBaseline = "bottom"
+        ctx.fillStyle = colorBrand //<======= here
+        // Color of the shadow;  RGB, RGBA, HSL, HEX, and other inputs are valid.
+        ctx.shadowColor = "white"; // string
+        ctx.shadowOffsetX = 0; // integer
+        ctx.shadowOffsetY = 0; // integer
+        ctx.shadowBlur = 50; // integer
+
+        drawTextT(inputText1.value, inputText1.id, canvas.width - 50, canvas.height - 50)
+        ctx.restore()
+    }
+
+    const drawText2 = function () {
+        // text line 1
+        ctx.save();
+        ctx.font = "64pt Impact"
+        ctx.strokeStyle = 'black'
+        ctx.lineWidth = 4
+        ctx.textAlign = "start"
+        ctx.textBaseline = "bottom"
+        ctx.fillStyle = 'white' //<======= here
+        ctx.shadowColor = "white"; // string
+        ctx.shadowOffsetX = 0; // integer
+        ctx.shadowOffsetY = 0; // integer
+        ctx.shadowBlur = 50; // integer
+
+        drawTextT(inputText2.value, inputText2.id, 50, canvas.height - 50)
+
+        ctx.restore()
+    }
+
+
+    const drawBottomBorder = function () {
+        // bottom border
+
+        ctx.save();
+        ctx.fillStyle = colorBrand
+        ctx.fillRect(0, canvas.height - 20, canvas.width, 20)
+        ctx.restore()
+    }
+
+
+
+
+    const drawTextT = function (text, tid, x, y) {
+        const w = ctx.measureText(text).width
+        const h = ctx.measureText(text).height
+        ctx.save();
+        ctx.translate(x, y)
+        ctx.translate(eId(`tf_${tid}_x`).value, eId(`tf_${tid}_y`).value)
+        ctx.translate(w / 2, h / 2)
+        ctx.rotate(eId(`tf_${tid}_r`).value * Math.PI / 180)
+        ctx.scale(eId(`tf_${tid}_s`).value * 0.01, eId(`tf_${tid}_s`).value * 0.01)
+        ctx.scale(eId(`tf_${tid}_h`).checked ? -1 : 1, eId(`tf_${tid}_v`).checked ? -1 : 1)
+        ctx.translate(-w / 2, -h / 2)
+        ctx.fillText(text, 0, 0)
+        ctx.strokeText(text, 0, 0)
+        ctx.restore()
+    }
+
+    const drawImageT = function (img, tid, x, y, w, h, options) {
+        ctx.save();
+        ctx.translate(x, y)
+        ctx.translate(eId(`tf_${tid}_x`).value, eId(`tf_${tid}_y`).value)
+        if (!options?.tl) ctx.translate(w / 2, h / 2)
+        ctx.rotate(eId(`tf_${tid}_r`).value * Math.PI / 180)
+        ctx.scale(eId(`tf_${tid}_s`).value * 0.01, eId(`tf_${tid}_s`).value * 0.01)
+        ctx.scale(eId(`tf_${tid}_h`).checked ? -1 : 1, eId(`tf_${tid}_v`).checked ? -1 : 1)
+        if (!options?.tl) ctx.translate(-w / 2, -h / 2)
+        ctx.drawImage(img, 0, 0, w, h);
+        ctx.restore()
+    }
+
+
+
+    const drawImageLogo = function () {
+        ctx.save();
+        ctx.fillStyle = colorLogo
+        ctx.fillRect(canvas.width - imgLogo.width - paddingBackgroundLogoPixel * 2, 0, imgLogo.width + paddingBackgroundLogoPixel * 2, imgLogo.height + paddingBackgroundLogoPixel * 2)
+        ctx.drawImage(imgLogo, canvas.width - imgLogo.width - paddingBackgroundLogoPixel, paddingBackgroundLogoPixel);
+        ctx.restore()
+    }
+
+    const drawImagePose = function () {
+        drawImageT(imgPose, inputPose.id, canvas.width * 0.1, canvas.height * 0.3, imgPoseWidth, imgPoseWidth * imgPose.height / imgPose.width)
+    }
+
+    const drawImageBackground = function () {
+        const w = Math.min(canvas.width, imgBackground.width)
+        drawImageT(imgBackground, inputBackgroundURL.id, 0, 0, w, w * imgBackground.height / imgBackground.width);
+    }
+
+    const drawImageSecond = function () {
+        drawImageT(imgSecond, inputSecondURL.id, 0, 0, imgSecond.width, imgSecond.height, { tl: true });
+    }
+
+
+    const drawImageThird = function () {
+        drawImageT(imgThird, inputThirdURL.id, 0, 0, imgThird.width, imgThird.height, { tl: false });
+    }
+
+
+    const render = function () {
+        drawBackground()
+        if (imgBackground) { drawImageBackground() }
+        if (imgThird) { drawImageThird() }
+        drawImagePose()
+        if (imgSecond) { drawImageSecond() }
+        drawImageLogo()
+        drawText1()
+        drawText2()
+        drawBottomBorder()
+        saveToURL()
+    }
+
+
+    // 
+
+    function diff(x, y) {
+
+        if (Math.sign(x) === Math.sign(y)) {
+
+            return Math.abs(x - y);
+
+        } else {
+
+            return Math.abs(x) + Math.abs(y);
+
+        };
+
+    };
+
+    function randn_bm() {
+        let u = 0, v = 0;
+        while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+        while (v === 0) v = Math.random();
+        let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        num = num / 10.0 + 0.5; // Translate to 0 -> 1
+        if (num > 1 || num < 0) return randn_bm() // resample between 0 and 1
+        return num
+    }
+
+    const randomizeInputByMinMax = function (el, onlyInteger) {
+        const max = el.getAttribute('data-random-max') || el.max
+        const min = el.getAttribute('data-random-min') || el.min
+        const result = parseFloat(el.min) + randn_bm() * diff(max, min)
+        if (onlyInteger) {
+            el.value = parseInt(result)
+        } else {
+            el.value = result
+        }
+
+    }
+    const randomizeTransform = function (id) {
+        randomizeInputByMinMax(eId('tf_' + id + '_x'))
+        randomizeInputByMinMax(eId('tf_' + id + '_y'))
+        randomizeInputByMinMax(eId('tf_' + id + '_r'))
+        randomizeInputByMinMax(eId('tf_' + id + '_s'))
+        eId('tf_' + id + '_h').checked = randn_bm() > 0.5 ? 1 : 0
+        eId('tf_' + id + '_v').checked = randn_bm() > 0.5 ? 1 : 0
+        render()
+    }
+
+    const resetInput = el => el.value = el.defaultValue
+    const resetTransform = function (id) {
+        resetInput(eId('tf_' + id + '_x'))
+        resetInput(eId('tf_' + id + '_y'))
+        resetInput(eId('tf_' + id + '_r'))
+        resetInput(eId('tf_' + id + '_s'))
+        eId('tf_' + id + '_h').checked = 0
+        eId('tf_' + id + '_v').checked = 0
+        render()
+    }
+
+    const addTransformMenu = function (id, menuElement) {
+        menuElement.innerHTML = `x/y/s/r/m: <input id="tf_${id}_x" type="range" min="-960" max="1280" value="0" title="x"/><input id="tf_${id}_y" type="range" min="-1280" max="640" value="0" title="y"/><input id="tf_${id}_s" type="range" min="0" max="1000" value="100" data-random-min="50" data-random-max="250" title="scale"/><input id="tf_${id}_r" type="range" min="-360" max="360" value="0" title="rotation"/><input title="mirror horizontal" type="checkbox" id="tf_${id}_h"/><input title="mirror vertical" type="checkbox" id="tf_${id}_v"/><button title="chaos" onclick="randomizeTransform('${id}')">c</button><button title="reset" onclick="resetTransform('${id}')">r</button>`
+    }
+
+    addTransformMenu(inputPose.id, spanPosesPosition)
+    addTransformMenu(inputBackgroundURL.id, spanBackgroundPosition)
+    addTransformMenu(inputText1.id, spanText1Position)
+    addTransformMenu(inputText2.id, spanText2Position)
+    addTransformMenu(inputSecondURL.id, spanSecondPosition)
+    addTransformMenu(inputThirdURL.id, spanThirdPosition)
+
+    poseList.innerHTML = [...Array(posesCount).keys()].map(i => '<img onclick="inputPose.value=' + i + ';loadImagesAndRender()" src="img/poses_thumbs/' + i + '.png">').join()
+
+
+
+    // Toggle visibility of prompt inputs for Background and SecondImage
+    btnPromptBackground.addEventListener('click', function () {
+        spanPromptBackground.style.display = (spanPromptBackground.style.display === 'none' || !spanPromptBackground.style.display) ? 'inline' : 'none'
+    })
+    btnPromptSecond.addEventListener('click', function () {
+        spanPromptSecond.style.display = (spanPromptSecond.style.display === 'none' || !spanPromptSecond.style.display) ? 'inline' : 'none'
+    })
+
+
+    document.querySelectorAll('[data-image-target]').forEach((input) => input.onchange = function (e) {
+        const inp = eId(e.target.getAttribute('data-image-target'))
+        inp.value = URL.createObjectURL(this.files[0]);
+        loadImagesAndRender()
+    })
+
+    loadFromURL()
+    loadImagesAndRender()
+
+    tf_inputSecondURL_s.value = 27
+
+
+
+    document.querySelectorAll('input').forEach((input) => input.addEventListener('input', render))
+    document.querySelectorAll('input').forEach((input) => input.addEventListener('change', render))
+    document.querySelectorAll('input').forEach((input) => input.addEventListener('keyup', render))
+    document.querySelectorAll('[data-force-imageload]').forEach((input) => input.addEventListener('change', loadImagesAndRender))
+    document.querySelectorAll('[data-force-imageload]').forEach((input) => input.addEventListener('keyup', loadImagesAndRender))
+
+    // download it
+
+    btnDownload.addEventListener('click', function (e) {
+        let canvasUrl = canvas.toDataURL('image/jpeg', 1.0);
+        const createEl = document.createElement('a');
+        createEl.href = canvasUrl;
+        createEl.download = "download-this-canvas";
+        createEl.click();
+        createEl.remove();
+    })
+
+</script>
+
+</html>
