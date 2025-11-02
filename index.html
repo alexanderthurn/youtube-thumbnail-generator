@@ -27,12 +27,12 @@
             data-image-target="inputBackgroundURL" /><span id="spanBackgroundPosition"></span><button id="btnPromptBackground" title="Generate with prompt">P</button><span id="spanPromptBackground" style="display:none;"> Prompt: <input id="inputPromptBackground" type="text" size="40" placeholder="Describe background..."><button id="btnGenerateBackground" title="Generate background image">Generate</button> <label title="Include Background as reference"><input id="chkBgBackground" type="checkbox"> Background</label> <label title="Include Pose as reference"><input id="chkBgPose" type="checkbox"> Pose</label> <label title="Include SecondImage as reference"><input id="chkBgSecond" type="checkbox"> SecondImage</label> <label title="Include ThirdImage as reference"><input id="chkBgThird" type="checkbox"> ThirdImage</label></span></div>
     <div><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">SecondImage</a>: <input
             id="inputSecondURL" type="text" size="50" data-force-imageload><input type="file"
-            data-image-target="inputSecondURL" /><span id="spanSecondPosition"></span><button id="btnPromptSecond" title="Generate with prompt">P</button><span id="spanPromptSecond" style="display:none;"> Prompt: <input id="inputPromptSecond" type="text" size="40" placeholder="Describe second image..."><button id="btnGenerateSecond" title="Generate second image">Generate</button></span></div>
+            data-image-target="inputSecondURL" /><span id="spanSecondPosition"></span><button id="btnPromptSecond" title="Generate with prompt">P</button><span id="spanPromptSecond" style="display:none;"> Prompt: <input id="inputPromptSecond" type="text" size="40" placeholder="Describe second image..."><button id="btnGenerateSecond" title="Generate second image">Generate</button> <label title="Apply chroma key to SecondImage"><input id="chkSecondMask" type="checkbox" checked> Mask</label> <button id="btnSecondSample" title="Sample key color from borders of SecondImage">Sample</button> Color: <input id="inputSecondKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputSecondTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputSecondSoftness" type="range" min="-1" max="255" value="0"></span></div>
     <div>ThirdImage: <input id="inputThirdURL" type="text" size="50" data-force-imageload><input type="file"
-            data-image-target="inputThirdURL" /><span id="spanThirdPosition"></span><button id="btnPromptThird" title="Generate with prompt">P</button><span id="spanPromptThird" style="display:none;"> Prompt: <input id="inputPromptThird" type="text" size="40" placeholder="Describe third image..."><button id="btnGenerateThird" title="Generate third image">Generate</button></span></div>
+            data-image-target="inputThirdURL" /><span id="spanThirdPosition"></span><button id="btnPromptThird" title="Generate with prompt">P</button><span id="spanPromptThird" style="display:none;"> Prompt: <input id="inputPromptThird" type="text" size="40" placeholder="Describe third image..."><button id="btnGenerateThird" title="Generate third image">Generate</button> <label title="Apply chroma key to ThirdImage"><input id="chkThirdMask" type="checkbox" checked> Mask</label> <button id="btnThirdSample" title="Sample key color from borders of ThirdImage">Sample</button> Color: <input id="inputThirdKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputThirdTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputThirdSoftness" type="range" min="-1" max="255" value="0"></span></div>
     <div>Pose: <input id="inputPose" step="1" type="number" min="0" max="30" data-force-imageload /><button
             title="chaos" onclick="inputPoseURL.value=''; if (typeof inputPoseKeyColor!=='undefined'){ inputPoseKeyColor.dataset.sampled=''; } randomizeInputByMinMax(inputPose, true); loadImagesAndRender()">c</button><span
-            id="spanPoses"></span><span id="spanPosesPosition"></span><button id="btnPromptPose" title="Generate with prompt">P</button><span id="spanPromptPose" style="display:none;"> Prompt: <textarea id="inputPromptPose" rows="4" cols="80" placeholder="Describe pose edit...">Using the provided image of a man in a suit, give him a magic hat. Ensure the man's face and features remain completely unchanged. The background has to be #ff00ff.</textarea><button id="btnGeneratePose" title="Generate pose image">Generate</button> <label title="Apply chroma key to pose"><input id="chkPoseMask" type="checkbox" checked> Mask</label> <button id="btnPoseSample" title="Sample key color from borders of pose">Sample</button> Color: <input id="inputPoseKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputPoseTolerance" type="range" min="-1" max="255" value="80"> Soft: <input id="inputPoseSoftness" type="range" min="-1" max="255" value="60"></span><input id="inputPoseURL" type="hidden" data-force-imageload /></div>
+            id="spanPoses"></span><span id="spanPosesPosition"></span><button id="btnPromptPose" title="Generate with prompt">P</button><span id="spanPromptPose" style="display:none;"> Prompt: <textarea id="inputPromptPose" rows="4" cols="80" placeholder="Describe pose edit...">Using the provided image of a man in a suit, give him a magic hat. Ensure the man's face and features remain completely unchanged. The background has to be #ff00ff.</textarea><button id="btnGeneratePose" title="Generate pose image">Generate</button> <label title="Apply chroma key to pose"><input id="chkPoseMask" type="checkbox" checked> Mask</label> <button id="btnPoseSample" title="Sample key color from borders of pose">Sample</button> Color: <input id="inputPoseKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputPoseTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputPoseSoftness" type="range" min="-1" max="255" value="0"></span><input id="inputPoseURL" type="hidden" data-force-imageload /></div>
     <div> Text1: <input id="inputText1" type="text"><span id="spanText1Position"></span></div>
     <div>Text2: <input id="inputText2" type="text"><span id="spanText2Position"></span></div>
     <div>Canvas color: <input id="inputCanvasColor" type="color" value="#000000"></div>
@@ -64,6 +64,8 @@
     var imgSecond = null
     var imgThird = null
     var poseProcessedCanvas = null
+    var secondProcessedCanvas = null
+    var thirdProcessedCanvas = null
 
 
     //inputBackgroundURL.value = urlBackground
@@ -176,7 +178,9 @@
 				if (id === inputSecondURL.id) { imgSecond = im; continue }
 				if (id === inputThirdURL.id) { imgThird = im; continue }
 			}
-			updatePoseMask()
+            updatePoseMask()
+            updateSecondMask()
+            updateThirdMask()
 			render()
 		})
 	}
@@ -294,12 +298,14 @@
     }
 
     const drawImageSecond = function () {
-        drawImageT(imgSecond, inputSecondURL.id, 0, 0, imgSecond.width, imgSecond.height, { tl: true });
+        const source = (typeof chkSecondMask !== 'undefined' && chkSecondMask.checked && secondProcessedCanvas) ? secondProcessedCanvas : imgSecond
+        drawImageT(source, inputSecondURL.id, 0, 0, imgSecond.width, imgSecond.height, { tl: true });
     }
 
 
     const drawImageThird = function () {
-        drawImageT(imgThird, inputThirdURL.id, 0, 0, imgThird.width, imgThird.height, { tl: false });
+        const source = (typeof chkThirdMask !== 'undefined' && chkThirdMask.checked && thirdProcessedCanvas) ? thirdProcessedCanvas : imgThird
+        drawImageT(source, inputThirdURL.id, 0, 0, imgThird.width, imgThird.height, { tl: false });
     }
 
 
@@ -600,8 +606,8 @@
         poseProcessedCanvas = null
         if (!imgPose) return
         if (typeof chkPoseMask === 'undefined' || !chkPoseMask.checked) return
-        const tol = parseInt(inputPoseTolerance.value || '80', 10)
-        const soft = parseInt(inputPoseSoftness.value || '60', 10)
+        const tol = parseInt(inputPoseTolerance.value || '0', 10)
+        const soft = parseInt(inputPoseSoftness.value || '0', 10)
         let rgb = hexToRgb(inputPoseKeyColor.value || '#ff66cc')
         // If color is default and we have an image, auto-sample on first run
         if (!inputPoseKeyColor.dataset.sampled) {
@@ -639,6 +645,88 @@
         poseProcessedCanvas = off
     }
 
+    const updateSecondMask = function () {
+        secondProcessedCanvas = null
+        if (!imgSecond) return
+        if (typeof chkSecondMask === 'undefined' || !chkSecondMask.checked) return
+        const tol = parseInt(inputSecondTolerance.value || '0', 10)
+        const soft = parseInt(inputSecondSoftness.value || '0', 10)
+        let rgb = hexToRgb(inputSecondKeyColor.value || '#ff66cc')
+        if (!inputSecondKeyColor.dataset.sampled) {
+            const sampled = samplePoseKeyFromBorders(imgSecond, 5)
+            rgb = sampled
+            const hex = '#' + [sampled.r, sampled.g, sampled.b].map(x=>x.toString(16).padStart(2,'0')).join('')
+            inputSecondKeyColor.value = hex
+            inputSecondKeyColor.dataset.sampled = '1'
+        }
+        const w = imgSecond.width, h = imgSecond.height
+        const off = document.createElement('canvas')
+        off.width = w; off.height = h
+        const ctx2 = off.getContext('2d')
+        ctx2.drawImage(imgSecond, 0, 0)
+        const imgData = ctx2.getImageData(0, 0, w, h)
+        const data = imgData.data
+        const thr = Math.max(0, tol)
+        const sf = Math.max(0, soft)
+        const softLo = Math.max(0, thr - sf)
+        const softHi = thr + sf
+        for (let i=0;i<data.length;i+=4){
+            const r=data[i], g=data[i+1], b=data[i+2]
+            const dr=r-rgb.r, dg=g-rgb.g, db=b-rgb.b
+            const d=Math.sqrt(dr*dr+dg*dg+db*db)
+            let alphaFactor = 1
+            if (d <= softLo) {
+                alphaFactor = 0
+            } else if (d < softHi) {
+                alphaFactor = (d - softLo) / (softHi - softLo)
+            }
+            data[i+3] = Math.round(data[i+3] * alphaFactor)
+        }
+        ctx2.putImageData(imgData, 0, 0)
+        secondProcessedCanvas = off
+    }
+
+    const updateThirdMask = function () {
+        thirdProcessedCanvas = null
+        if (!imgThird) return
+        if (typeof chkThirdMask === 'undefined' || !chkThirdMask.checked) return
+        const tol = parseInt(inputThirdTolerance.value || '0', 10)
+        const soft = parseInt(inputThirdSoftness.value || '0', 10)
+        let rgb = hexToRgb(inputThirdKeyColor.value || '#ff66cc')
+        if (!inputThirdKeyColor.dataset.sampled) {
+            const sampled = samplePoseKeyFromBorders(imgThird, 5)
+            rgb = sampled
+            const hex = '#' + [sampled.r, sampled.g, sampled.b].map(x=>x.toString(16).padStart(2,'0')).join('')
+            inputThirdKeyColor.value = hex
+            inputThirdKeyColor.dataset.sampled = '1'
+        }
+        const w = imgThird.width, h = imgThird.height
+        const off = document.createElement('canvas')
+        off.width = w; off.height = h
+        const ctx2 = off.getContext('2d')
+        ctx2.drawImage(imgThird, 0, 0)
+        const imgData = ctx2.getImageData(0, 0, w, h)
+        const data = imgData.data
+        const thr = Math.max(0, tol)
+        const sf = Math.max(0, soft)
+        const softLo = Math.max(0, thr - sf)
+        const softHi = thr + sf
+        for (let i=0;i<data.length;i+=4){
+            const r=data[i], g=data[i+1], b=data[i+2]
+            const dr=r-rgb.r, dg=g-rgb.g, db=b-rgb.b
+            const d=Math.sqrt(dr*dr+dg*dg+db*db)
+            let alphaFactor = 1
+            if (d <= softLo) {
+                alphaFactor = 0
+            } else if (d < softHi) {
+                alphaFactor = (d - softLo) / (softHi - softLo)
+            }
+            data[i+3] = Math.round(data[i+3] * alphaFactor)
+        }
+        ctx2.putImageData(imgData, 0, 0)
+        thirdProcessedCanvas = off
+    }
+
     // UI events for pose masking
     if (typeof chkPoseMask !== 'undefined') {
         chkPoseMask.addEventListener('change', function(){ updatePoseMask(); render(); })
@@ -660,6 +748,54 @@
             inputPoseKeyColor.value = hex
             inputPoseKeyColor.dataset.sampled = '1'
             updatePoseMask(); render();
+        })
+    }
+
+    // UI events for second image masking
+    if (typeof chkSecondMask !== 'undefined') {
+        chkSecondMask.addEventListener('change', function(){ updateSecondMask(); render(); })
+    }
+    if (typeof inputSecondKeyColor !== 'undefined') {
+        inputSecondKeyColor.addEventListener('input', function(){ inputSecondKeyColor.dataset.sampled='1'; updateSecondMask(); render(); })
+    }
+    if (typeof inputSecondTolerance !== 'undefined') {
+        inputSecondTolerance.addEventListener('input', function(){ updateSecondMask(); render(); })
+    }
+    if (typeof inputSecondSoftness !== 'undefined') {
+        inputSecondSoftness.addEventListener('input', function(){ updateSecondMask(); render(); })
+    }
+    if (typeof btnSecondSample !== 'undefined') {
+        btnSecondSample.addEventListener('click', function(){
+            if (!imgSecond) return
+            const sampled = samplePoseKeyFromBorders(imgSecond, 5)
+            const hex = '#' + [sampled.r, sampled.g, sampled.b].map(x=>x.toString(16).padStart(2,'0')).join('')
+            inputSecondKeyColor.value = hex
+            inputSecondKeyColor.dataset.sampled = '1'
+            updateSecondMask(); render();
+        })
+    }
+
+    // UI events for third image masking
+    if (typeof chkThirdMask !== 'undefined') {
+        chkThirdMask.addEventListener('change', function(){ updateThirdMask(); render(); })
+    }
+    if (typeof inputThirdKeyColor !== 'undefined') {
+        inputThirdKeyColor.addEventListener('input', function(){ inputThirdKeyColor.dataset.sampled='1'; updateThirdMask(); render(); })
+    }
+    if (typeof inputThirdTolerance !== 'undefined') {
+        inputThirdTolerance.addEventListener('input', function(){ updateThirdMask(); render(); })
+    }
+    if (typeof inputThirdSoftness !== 'undefined') {
+        inputThirdSoftness.addEventListener('input', function(){ updateThirdMask(); render(); })
+    }
+    if (typeof btnThirdSample !== 'undefined') {
+        btnThirdSample.addEventListener('click', function(){
+            if (!imgThird) return
+            const sampled = samplePoseKeyFromBorders(imgThird, 5)
+            const hex = '#' + [sampled.r, sampled.g, sampled.b].map(x=>x.toString(16).padStart(2,'0')).join('')
+            inputThirdKeyColor.value = hex
+            inputThirdKeyColor.dataset.sampled = '1'
+            updateThirdMask(); render();
         })
     }
 
