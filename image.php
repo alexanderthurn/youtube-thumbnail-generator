@@ -39,6 +39,68 @@ function write_png_thumbnail($binary, $targetPath, $maxWidth = 256) {
     imagedestroy($src);
 }
 
+/**
+ * Fetch bytes and detected mime type from a source that can be:
+ * - http(s) URL
+ * - internal image.php URL (relative path)
+ * - local filesystem path (relative to project root)
+ */
+function fetch_bytes_and_mime($url, $defaultMime = 'image/png') {
+    $data = null;
+    $mime = $defaultMime;
+    if (!is_string($url) || $url === '') { return [null, $mime]; }
+
+    if (preg_match('#^https?://#i', $url)) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 20,
+        ]);
+        $data = curl_exec($ch);
+        if ($data !== false) {
+            $ct = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            if (is_string($ct) && $ct !== '') { $mime = $ct; }
+        }
+        curl_close($ch);
+        return [$data, $mime];
+    }
+
+    // Internal image.php URL (relative)
+    if (preg_match('#^(?:\./)?image\.php\?#i', $url) || preg_match('#^image\.php\?#i', $url)) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '127.0.0.1';
+        $absolute = $scheme . '://' . $host . '/' . ltrim(preg_replace('#^\./#', '', $url), '/');
+        $ch = curl_init($absolute);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
+        ]);
+        $data = curl_exec($ch);
+        if ($data !== false) {
+            $ct = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            if (is_string($ct) && $ct !== '') { $mime = $ct; }
+        }
+        curl_close($ch);
+        return [$data, $mime];
+    }
+
+    // Local file path
+    $localPath = $url;
+    if (strpos($localPath, '/') !== 0) {
+        $localPath = __DIR__ . '/' . $localPath;
+    }
+    if (is_readable($localPath)) {
+        $data = @file_get_contents($localPath);
+        $detected = @mime_content_type($localPath);
+        if ($detected) { $mime = $detected; }
+    }
+    return [$data, $mime];
+}
+
 # --- Eingabe prüfen: https?:// (Proxy) ODER gemini://<prompt> (Generierung) ---
 if (!isset($_GET['url'])) {
     header('HTTP/1.1 404 Not Found'); exit;
@@ -80,41 +142,32 @@ if ($isGemini) {
     $prompt = preg_replace('#^gemini://#i', '', $rawUrl);
     $prompt = urldecode($prompt);
 
-    # Optional: Pose-Bild laden (lokale Datei oder entfernte URL) und Base64 enkodieren
+    # Optional: Pose-Bild laden (lokale Datei oder entfernte URL) und Base64 enkodieren (nur für Pose-Generierung)
     $poseUrl = isset($_GET['pose']) ? trim($_GET['pose']) : '';
     $poseB64 = null;
     $poseMime = 'image/png';
     if ($poseUrl !== '') {
-        $poseData = null;
-        if (preg_match('#^https?://#i', $poseUrl)) {
-            // Remote holen
-            $chPose = curl_init($poseUrl);
-            curl_setopt_array($chPose, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_CONNECTTIMEOUT => 5,
-                CURLOPT_TIMEOUT => 10,
-            ]);
-            $poseData = curl_exec($chPose);
-            if ($poseData !== false) {
-                $ct = curl_getinfo($chPose, CURLINFO_CONTENT_TYPE);
-                if (is_string($ct) && $ct !== '') { $poseMime = $ct; }
-            }
-            curl_close($chPose);
-        } else {
-            // Lokale Datei relativ zum Projektverzeichnis
-            $localPath = $poseUrl;
-            if (strpos($localPath, '/') !== 0) {
-                $localPath = __DIR__ . '/' . $localPath;
-            }
-            if (is_readable($localPath)) {
-                $poseData = @file_get_contents($localPath);
-                $detected = @mime_content_type($localPath);
-                if ($detected) { $poseMime = $detected; }
-            }
-        }
+        list($poseData, $detMime) = fetch_bytes_and_mime($poseUrl, $poseMime);
+        if ($detMime) { $poseMime = $detMime; }
         if ($poseData !== null && $poseData !== false) {
             $poseB64 = base64_encode($poseData);
+        }
+    }
+
+    # Optionale Referenz-Bilder (für Background-Generierung): Reihenfolge: Background, Pose, Second, Third
+    $refKeys = ['ref_background', 'ref_pose', 'ref_second', 'ref_third'];
+    $refInlineParts = [];
+    foreach ($refKeys as $rk) {
+        $val = isset($_GET[$rk]) ? trim($_GET[$rk]) : '';
+        if ($val === '') { continue; }
+        list($bytes, $mime) = fetch_bytes_and_mime($val, 'image/png');
+        if ($bytes !== null && $bytes !== false) {
+            $refInlineParts[] = [
+                'inline_data' => [
+                    'mime_type' => $mime,
+                    'data' => base64_encode($bytes)
+                ]
+            ];
         }
     }
 
@@ -126,7 +179,9 @@ if ($isGemini) {
     ensure_dir($assetDir);
     ensure_dir($thumbDir);
 
-    $hashSource = $prompt . '|' . ($poseUrl ?: '');
+    $hashParts = [$prompt, ($poseUrl ?: '')];
+    foreach ($refKeys as $rk) { $hashParts[] = isset($_GET[$rk]) ? $_GET[$rk] : ''; }
+    $hashSource = implode('|', $hashParts);
     $hash = sha1($hashSource);
     $short = substr($hash, 0, 10);
     $slug = slugify($prompt, 80);
@@ -163,7 +218,9 @@ if ($isGemini) {
     // Prompt nur präfixen, wenn eine Pose übergeben wurde
     $prefixedPrompt = $prompt;
 
-    $parts = [ [ 'text' => $prefixedPrompt ] ];
+    // Build parts: inline refs first (background, pose, second, third), then optional pose (pose generation), then text
+    $parts = [];
+    foreach ($refInlineParts as $p) { $parts[] = $p; }
     if ($poseB64) {
         $parts[] = [
             'inline_data' => [
@@ -172,6 +229,7 @@ if ($isGemini) {
             ]
         ];
     }
+    $parts[] = [ 'text' => $prefixedPrompt ];
 
     $payload = json_encode([
         'contents' => [[ 'parts' => $parts ]],

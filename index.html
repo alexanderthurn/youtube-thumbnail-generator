@@ -24,7 +24,7 @@
 
     <div><a href="https://unsplash.com/s/photos/werte?license=free" target="unsplash">Background</a>: <input
             id="inputBackgroundURL" type="text" size="50" data-force-imageload><input type="file"
-            data-image-target="inputBackgroundURL" /><span id="spanBackgroundPosition"></span><button id="btnPromptBackground" title="Generate with prompt">P</button><span id="spanPromptBackground" style="display:none;"> Prompt: <input id="inputPromptBackground" type="text" size="40" placeholder="Describe background..."><button id="btnGenerateBackground" title="Generate background image">Generate</button></span></div>
+            data-image-target="inputBackgroundURL" /><span id="spanBackgroundPosition"></span><button id="btnPromptBackground" title="Generate with prompt">P</button><span id="spanPromptBackground" style="display:none;"> Prompt: <input id="inputPromptBackground" type="text" size="40" placeholder="Describe background..."><button id="btnGenerateBackground" title="Generate background image">Generate</button> <label title="Include Pose as reference"><input id="chkBgPose" type="checkbox"> Pose</label> <label title="Include SecondImage as reference"><input id="chkBgSecond" type="checkbox"> SecondImage</label> <label title="Include ThirdImage as reference"><input id="chkBgThird" type="checkbox"> ThirdImage</label></span></div>
     <div><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">SecondImage</a>: <input
             id="inputSecondURL" type="text" size="50" data-force-imageload><input type="file"
             data-image-target="inputSecondURL" /><span id="spanSecondPosition"></span><button id="btnPromptSecond" title="Generate with prompt">P</button><span id="spanPromptSecond" style="display:none;"> Prompt: <input id="inputPromptSecond" type="text" size="40" placeholder="Describe second image..."><button id="btnGenerateSecond" title="Generate second image">Generate</button></span></div>
@@ -445,27 +445,78 @@
 		if (e.key === 'Enter') { e.preventDefault(); btnGeneratePose.click(); }
 	})
 
-    // Generate via Gemini for Background
-	btnGenerateBackground.addEventListener('click', function () {
-		const prompt = inputPromptBackground.value.trim()
-		if (!prompt) { return }
-		const previousText = this.textContent
-		this.disabled = true
-		this.textContent = '⏳'
-        inputBackgroundURL.value = 'gemini://' + prompt
-		suspendPoseGeminiOnce = true
-		loadImagesAndRender()
-			.then(() => {
-				suspendPoseGeminiOnce = false
-				this.disabled = false
-				this.textContent = previousText
-			})
-			.catch(() => {
-				suspendPoseGeminiOnce = false
-				this.disabled = false
-				this.textContent = previousText
-			})
-	})
+    // Generate via Gemini for Background (with optional reference images)
+    btnGenerateBackground.addEventListener('click', function () {
+        const prompt = inputPromptBackground.value.trim()
+        if (!prompt) { return }
+        const previousText = this.textContent
+        this.disabled = true
+        this.textContent = '⏳'
+
+        // Build image.php request with refs: background (always first if available), then Pose, Second, Third
+        const wasBg = inputBackgroundURL.value
+        const isBlob = s => (String(s || '').indexOf('blob:') === 0 || String(s || '').indexOf('blob22:') === 0)
+        const toProxyUrl = s => {
+            if (!s) return ''
+            if (s.indexOf('./image.php') === 0 || s.indexOf('image.php') === 0) return s
+            if (s.indexOf('http://') === 0 || s.indexOf('https://') === 0) return './image.php?url=' + encodeURIComponent(s)
+            if (s.indexOf('gemini://') === 0) return './image.php?url=' + encodeURIComponent(s)
+            // local file path (e.g., img/poses/..)
+            return s
+        }
+
+        let finalUrl = './image.php?url=' + encodeURIComponent('gemini://' + prompt)
+
+        // Background ref (if available and not a local blob)
+        if (wasBg && !isBlob(wasBg)) {
+            const bgRef = toProxyUrl(wasBg)
+            if (bgRef) { finalUrl += '&ref_background=' + encodeURIComponent(bgRef) }
+        }
+
+        // Pose ref (optional)
+        if (typeof chkBgPose !== 'undefined' && chkBgPose.checked) {
+            let poseRef = ''
+            if (inputPoseURL.value && String(inputPoseURL.value).indexOf('blob:') !== 0) {
+                poseRef = toProxyUrl(inputPoseURL.value)
+            } else {
+                poseRef = 'img/poses/' + inputPose.value + '.png'
+            }
+            if (poseRef) { finalUrl += '&ref_pose=' + encodeURIComponent(poseRef) }
+        }
+
+        // Second ref (optional)
+        if (typeof chkBgSecond !== 'undefined' && chkBgSecond.checked) {
+            const s = inputSecondURL.value
+            if (s && !isBlob(s)) {
+                const secRef = toProxyUrl(s)
+                if (secRef) { finalUrl += '&ref_second=' + encodeURIComponent(secRef) }
+            }
+        }
+
+        // Third ref (optional)
+        if (typeof chkBgThird !== 'undefined' && chkBgThird.checked) {
+            const t = inputThirdURL.value
+            if (t && !isBlob(t)) {
+                const thRef = toProxyUrl(t)
+                if (thRef) { finalUrl += '&ref_third=' + encodeURIComponent(thRef) }
+            }
+        }
+
+        // Set and render
+        inputBackgroundURL.value = finalUrl
+        suspendPoseGeminiOnce = true
+        loadImagesAndRender()
+            .then(() => {
+                suspendPoseGeminiOnce = false
+                this.disabled = false
+                this.textContent = previousText
+            })
+            .catch(() => {
+                suspendPoseGeminiOnce = false
+                this.disabled = false
+                this.textContent = previousText
+            })
+    })
 
     // Generate via Gemini for SecondImage
 	btnGenerateSecond.addEventListener('click', function () {
