@@ -21,30 +21,37 @@
 </head>
 
 <body>
+    <div class="ui-level-0">Mode: 
+        <select id="selectUiLevel">
+            <option value="0">Simple</option>
+            <option value="1">Advanced</option>
+            <option value="2">Expert</option>
+        </select>
+    </div>
 
-    <div><a href="https://unsplash.com/s/photos/werte?license=free" target="unsplash">Background</a>: <input
+    <div class="ui-level-0"><a href="https://unsplash.com/s/photos/werte?license=free" target="unsplash">Background</a>: <input
             id="inputBackgroundURL" type="text" size="50" data-force-imageload><input type="file"
-            data-image-target="inputBackgroundURL" /><span id="spanBackgroundPosition"></span><button id="btnPromptBackground" title="Generate with prompt">P</button><span id="spanPromptBackground" style="display:none;"> Prompt: <input id="inputPromptBackground" type="text" size="40" placeholder="Describe background..."><button id="btnGenerateBackground" title="Generate background image">Generate</button> <label title="Include Background as reference"><input id="chkBgBackground" type="checkbox"> Background</label> <label title="Include Pose as reference"><input id="chkBgPose" type="checkbox"> Pose</label> <label title="Include SecondImage as reference"><input id="chkBgSecond" type="checkbox"> SecondImage</label> <label title="Include ThirdImage as reference"><input id="chkBgThird" type="checkbox"> ThirdImage</label></span></div>
-    <div><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">SecondImage</a>: <input
+            data-image-target="inputBackgroundURL" /><span id="spanBackgroundPosition" class="ui-level-0"></span><button id="btnPromptBackground" class="ui-level-0" title="Generate with prompt">P</button><span id="spanPromptBackground" class="ui-level-0" style="display:none;"> Prompt: <input id="inputPromptBackground" type="text" size="40" placeholder="Describe background..."><button id="btnGenerateBackground" title="Generate background image">Generate</button> <label title="Include Background as reference"><input id="chkBgBackground" type="checkbox"> Background</label> <label title="Include Pose as reference"><input id="chkBgPose" type="checkbox"> Pose</label> <label title="Include SecondImage as reference"><input id="chkBgSecond" type="checkbox"> SecondImage</label> <label title="Include ThirdImage as reference"><input id="chkBgThird" type="checkbox"> ThirdImage</label></span></div>
+    <div class="ui-level-1"><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">SecondImage</a>: <input
             id="inputSecondURL" type="text" size="50" data-force-imageload><input type="file"
             data-image-target="inputSecondURL" /><span id="spanSecondPosition"></span><button id="btnPromptSecond" title="Generate with prompt">P</button><span id="spanPromptSecond" style="display:none;"> Prompt: <input id="inputPromptSecond" type="text" size="40" placeholder="Describe second image..."><button id="btnGenerateSecond" title="Generate second image">Generate</button> <label title="Apply chroma key to SecondImage"><input id="chkSecondMask" type="checkbox" checked> Mask</label> <button id="btnSecondSample" title="Sample key color from borders of SecondImage">Sample</button> Color: <input id="inputSecondKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputSecondTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputSecondSoftness" type="range" min="-1" max="255" value="0"></span></div>
-    <div>ThirdImage: <input id="inputThirdURL" type="text" size="50" data-force-imageload><input type="file"
+    <div class="ui-level-1">ThirdImage: <input id="inputThirdURL" type="text" size="50" data-force-imageload><input type="file"
             data-image-target="inputThirdURL" /><span id="spanThirdPosition"></span><button id="btnPromptThird" title="Generate with prompt">P</button><span id="spanPromptThird" style="display:none;"> Prompt: <input id="inputPromptThird" type="text" size="40" placeholder="Describe third image..."><button id="btnGenerateThird" title="Generate third image">Generate</button> <label title="Apply chroma key to ThirdImage"><input id="chkThirdMask" type="checkbox" checked> Mask</label> <button id="btnThirdSample" title="Sample key color from borders of ThirdImage">Sample</button> Color: <input id="inputThirdKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputThirdTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputThirdSoftness" type="range" min="-1" max="255" value="0"></span></div>
-    <div>Pose: <input id="inputPose" step="1" type="number" min="0" max="30" data-force-imageload /><button
+    <div class="ui-level-0">Pose: <input id="inputPose" step="1" type="number" min="0" max="30" data-force-imageload /><button
             title="chaos" onclick="inputPoseURL.value=''; if (typeof inputPoseKeyColor!=='undefined'){ inputPoseKeyColor.dataset.sampled=''; } randomizeInputByMinMax(inputPose, true); loadImagesAndRender()">c</button><span
-            id="spanPoses"></span><span id="spanPosesPosition"></span><button id="btnPromptPose" title="Generate with prompt">P</button><span id="spanPromptPose" style="display:none;"> Prompt: <textarea id="inputPromptPose" rows="4" cols="80" placeholder="Describe pose edit...">Using the provided image of a man in a suit, give him a magic hat. Ensure the man's face and features remain completely unchanged. The background has to be #ff00ff.</textarea><button id="btnGeneratePose" title="Generate pose image">Generate</button> <label title="Apply chroma key to pose"><input id="chkPoseMask" type="checkbox" checked> Mask</label> <button id="btnPoseSample" title="Sample key color from borders of pose">Sample</button> Color: <input id="inputPoseKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputPoseTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputPoseSoftness" type="range" min="-1" max="255" value="0"></span><input id="inputPoseURL" type="hidden" data-force-imageload /></div>
-    <div> Text1: <input id="inputText1" type="text"><span id="spanText1Position"></span></div>
-    <div>Text2: <input id="inputText2" type="text"><span id="spanText2Position"></span></div>
-    <div>Canvas color: <input id="inputCanvasColor" type="color" value="#000000"></div>
+            id="spanPoses"></span><span id="spanPosesPosition" class="ui-level-0"></span><button id="btnPromptPose" class="ui-level-1" title="Generate with prompt">P</button><span id="spanPromptPose" class="ui-level-1" style="display:none;"> Prompt: <textarea id="inputPromptPose" rows="4" cols="80" placeholder="Describe pose edit...">Using the provided image of a man in a suit, give him a magic hat. Ensure the man's face and features remain completely unchanged. The background has to be #ff00ff.</textarea><button id="btnGeneratePose" title="Generate pose image">Generate</button> <label title="Apply chroma key to pose"><input id="chkPoseMask" type="checkbox" checked> Mask</label> <button id="btnPoseSample" title="Sample key color from borders of pose">Sample</button> Color: <input id="inputPoseKeyColor" type="color" value="#ff00ff"> Tol: <input id="inputPoseTolerance" type="range" min="-1" max="255" value="0"> Soft: <input id="inputPoseSoftness" type="range" min="-1" max="255" value="0"></span><input id="inputPoseURL" type="hidden" data-force-imageload /></div>
+    <div class="ui-level-0"> Text1: <input id="inputText1" type="text"><span id="spanText1Position" class="ui-level-1"></span></div>
+    <div class="ui-level-0">Text2: <input id="inputText2" type="text"><span id="spanText2Position" class="ui-level-1"></span></div>
+    <div class="ui-level-1">Canvas color: <input id="inputCanvasColor" type="color" value="#000000"></div>
 
-    <button id="btnDownload">Download</button>
-    <a id="btnDeeplink" href="">DeepLink</a>
-    <a id="btnReset" href="?">Reset All</a><br />
+    <button id="btnDownload" class="ui-level-0">Download</button>
+    <a id="btnDeeplink" class="ui-level-0" href="">DeepLink</a>
+    <a id="btnReset" class="ui-level-0" href="?">Reset All</a><br />
     <canvas width="1280" height="720" id="canvas"></canvas>
 
-    <div id="poseList"></div>
-    <div id="generatedPoseList"></div>
-    <div id="generatedBackgroundList"></div>
+    <div id="poseList" class="ui-level-1"></div>
+    <div id="generatedPoseList" class="ui-level-1"></div>
+    <div id="generatedBackgroundList" class="ui-level-1"></div>
 </body>
 
 <script type="text/javascript">
@@ -367,6 +374,10 @@
         randomizeInputByMinMax(eId('tf_' + id + '_s'))
         eId('tf_' + id + '_h').checked = randn_bm() > 0.5 ? 1 : 0
         eId('tf_' + id + '_v').checked = randn_bm() > 0.5 ? 1 : 0
+        if (eId('tfn_' + id + '_x')) { eId('tfn_' + id + '_x').value = eId('tf_' + id + '_x').value }
+        if (eId('tfn_' + id + '_y')) { eId('tfn_' + id + '_y').value = eId('tf_' + id + '_y').value }
+        if (eId('tfn_' + id + '_r')) { eId('tfn_' + id + '_r').value = eId('tf_' + id + '_r').value }
+        if (eId('tfn_' + id + '_s')) { eId('tfn_' + id + '_s').value = eId('tf_' + id + '_s').value }
         render()
     }
 
@@ -378,11 +389,27 @@
         resetInput(eId('tf_' + id + '_s'))
         eId('tf_' + id + '_h').checked = 0
         eId('tf_' + id + '_v').checked = 0
+        if (eId('tfn_' + id + '_x')) { eId('tfn_' + id + '_x').value = eId('tf_' + id + '_x').value }
+        if (eId('tfn_' + id + '_y')) { eId('tfn_' + id + '_y').value = eId('tf_' + id + '_y').value }
+        if (eId('tfn_' + id + '_r')) { eId('tfn_' + id + '_r').value = eId('tf_' + id + '_r').value }
+        if (eId('tfn_' + id + '_s')) { eId('tfn_' + id + '_s').value = eId('tf_' + id + '_s').value }
         render()
     }
 
     const addTransformMenu = function (id, menuElement) {
-        menuElement.innerHTML = `x/y/s/r/m: <input id="tf_${id}_x" type="range" min="-960" max="1280" value="0" title="x"/><input id="tf_${id}_y" type="range" min="-1280" max="640" value="0" title="y"/><input id="tf_${id}_s" type="range" min="0" max="1000" value="100" data-random-min="50" data-random-max="250" title="scale"/><input id="tf_${id}_r" type="range" min="-360" max="360" value="0" title="rotation"/><input title="mirror horizontal" type="checkbox" id="tf_${id}_h"/><input title="mirror vertical" type="checkbox" id="tf_${id}_v"/><button title="chaos" onclick="randomizeTransform('${id}')">c</button><button title="reset" onclick="resetTransform('${id}')">r</button>`
+        menuElement.innerHTML = `x/y/s/r/m: 
+<input id="tf_${id}_x" type="range" min="-1960" max="2280" value="0" title="x" oninput="eId('tfn_${id}_x').value=this.value; render()"/>
+<input class=\"ui-level-2\" id="tfn_${id}_x" type="number" min="-1960" max="2280" value="0" step="1" title="x" oninput="eId('tf_${id}_x').value=this.value; render()"/>
+<input id="tf_${id}_y" type="range" min="-2280" max="1640" value="0" title="y" oninput="eId('tfn_${id}_y').value=this.value; render()"/>
+<input class=\"ui-level-2\" id="tfn_${id}_y" type="number" min="-2280" max="1640" value="0" step="1" title="y" oninput="eId('tf_${id}_y').value=this.value; render()"/>
+<input id="tf_${id}_s" type="range" min="-1000" max="1000" value="100" data-random-min="50" data-random-max="250" title="scale" oninput="eId('tfn_${id}_s').value=this.value; render()"/>
+<input class=\"ui-level-2\" id="tfn_${id}_s" type="number" min="-1000" max="1000" value="100" step="1" title="scale" oninput="eId('tf_${id}_s').value=this.value; render()"/>
+<input id="tf_${id}_r" type="range" min="-360" max="360" value="0" title="rotation" oninput="eId('tfn_${id}_r').value=this.value; render()"/>
+<input class=\"ui-level-2\" id="tfn_${id}_r" type="number" min="-360" max="360" value="0" step="1" title="rotation" oninput="eId('tf_${id}_r').value=this.value; render()"/>
+<input title="mirror horizontal" type="checkbox" id="tf_${id}_h"/>
+<input title="mirror vertical" type="checkbox" id="tf_${id}_v"/>
+<button title="chaos" onclick="randomizeTransform('${id}')">c</button>
+<button title="reset" onclick="resetTransform('${id}')">r</button>`
     }
 
     addTransformMenu(inputPose.id, spanPosesPosition)
@@ -391,6 +418,19 @@
     addTransformMenu(inputText2.id, spanText2Position)
     addTransformMenu(inputSecondURL.id, spanSecondPosition)
     addTransformMenu(inputThirdURL.id, spanThirdPosition)
+
+    const syncTransformNumbersFor = function(id){
+        const keys = ['x','y','s','r']
+        keys.forEach(function(k){
+            const r = eId('tf_' + id + '_' + k)
+            const n = eId('tfn_' + id + '_' + k)
+            if (r && n) { n.value = r.value }
+        })
+    }
+    const syncAllTransformNumbers = function(){
+        [inputPose.id, inputBackgroundURL.id, inputText1.id, inputText2.id, inputSecondURL.id, inputThirdURL.id].forEach(function(i){ syncTransformNumbersFor(i) })
+    }
+    syncAllTransformNumbers()
 
     const escapeHtml = function (s) {
         return String(s || '').replace(/[&<>"']/g, function (c) {
@@ -837,10 +877,12 @@
     })
 
     loadFromURL()
+    syncAllTransformNumbers()
     loadImagesAndRender()
     populateAssetLists()
 
     tf_inputSecondURL_s.value = 27
+    if (typeof syncTransformNumbersFor === 'function') { syncTransformNumbersFor(inputSecondURL.id) }
 
 
 
@@ -849,6 +891,25 @@
     document.querySelectorAll('input').forEach((input) => input.addEventListener('keyup', render))
     document.querySelectorAll('[data-force-imageload]').forEach((input) => input.addEventListener('change', loadImagesAndRender))
     document.querySelectorAll('[data-force-imageload]').forEach((input) => input.addEventListener('keyup', loadImagesAndRender))
+
+    // UI Level toggle logic
+    const setUiLevel = function (level) {
+        const lvl = parseInt(level, 10) || 0
+        document.body.dataset.uiLevel = String(lvl)
+        document.querySelectorAll('.ui-level-0').forEach(function(el){ el.hidden = false })
+        document.querySelectorAll('.ui-level-1, .ui-level-2').forEach(function(el){
+            const required = el.classList.contains('ui-level-2') ? 2 : 1
+            el.hidden = lvl < required
+        })
+        try { localStorage.setItem('uiLevel', String(lvl)) } catch(e) { }
+    }
+    if (typeof selectUiLevel !== 'undefined') {
+        selectUiLevel.addEventListener('change', function(){ setUiLevel(this.value) })
+        let stored = '0'
+        try { stored = localStorage.getItem('uiLevel') || '0' } catch(e) { stored = '0' }
+        selectUiLevel.value = stored
+        setUiLevel(stored)
+    }
 
     // download it
 
