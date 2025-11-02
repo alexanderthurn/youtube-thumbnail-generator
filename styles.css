@@ -191,4 +191,23 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 	gap: 12px;
 }
 
+/* Prompt UI */
+.prompt-label {
+	display: block;
+	font-weight: 600;
+	margin: 6px 0 6px 0;
+}
+.prompt-textarea {
+	width: 100%;
+	max-width: 100%;
+	min-width: 100%;
+	box-sizing: border-box;
+	padding: 8px 10px;
+	border-radius: var(--radius-md);
+	border: 1px solid rgba(0,0,0,0.1);
+	background: #fff;
+	color: var(--text);
+	resize: vertical;
+}
+
 
