@@ -100,9 +100,18 @@
         </div>
     </section>
 
-    <div id="poseList" class="ui-level-1"></div>
-    <div id="generatedPoseList" class="ui-level-1"></div>
-    <div id="generatedBackgroundList" class="ui-level-1"></div>
+    <div id="poseList" class="ui-level-1">
+        <div class="thumbs-header"><span class="thumbs-title">Poses</span> <button id="btnShowAllPoses" class="btn">Show all</button></div>
+        <div id="poseListItems"></div>
+    </div>
+    <div id="generatedPoseList" class="ui-level-1">
+        <div class="thumbs-header"><span class="thumbs-title">AI Poses</span> <button id="btnShowAllGeneratedPoses" class="btn">Show all</button></div>
+        <div id="generatedPoseListItems"></div>
+    </div>
+    <div id="generatedBackgroundList" class="ui-level-1">
+        <div class="thumbs-header"><span class="thumbs-title">Background</span> <button id="btnShowAllGeneratedBackgrounds" class="btn">Show all</button></div>
+        <div id="generatedBackgroundListItems"></div>
+    </div>
     </main>
 
     <footer class="footer">
@@ -142,6 +151,13 @@
     var poseProcessedCanvas = null
     var secondProcessedCanvas = null
     var thirdProcessedCanvas = null
+
+    // Asset list state
+    var normalPosesData = []
+    var generatedPosesData = []
+    var generatedBackgroundsData = []
+    var showAllGeneratedPoses = false
+    var showAllGeneratedBackgrounds = false
 
 
     //inputBackgroundURL.value = urlBackground
@@ -541,7 +557,7 @@
     }
 
     const addTransformMenu = function (id, menuElement) {
-        menuElement.innerHTML = `x/y/s/r/m: 
+        menuElement.innerHTML = `<br>x/y/s/r/m: 
 <input id="tf_${id}_x" type="range" min="-1960" max="2280" value="0" title="x" oninput="eId('tfn_${id}_x').value=this.value; render()"/>
 <input class=\"ui-level-2\" id="tfn_${id}_x" type="number" min="-1960" max="2280" value="0" step="1" title="x" oninput="eId('tf_${id}_x').value=this.value; render()"/>
 <input id="tf_${id}_y" type="range" min="-2280" max="1640" value="0" title="y" oninput="eId('tfn_${id}_y').value=this.value; render()"/>
@@ -582,25 +598,84 @@
         })
     }
 
+    const renderPoseList = function(){
+        if (!Array.isArray(normalPosesData)) { normalPosesData = [] }
+        if (typeof poseListItems !== 'undefined') {
+            poseListItems.innerHTML = normalPosesData.map(function(p){
+                return "<img onclick=\"inputPose.value=" + p.index + ";inputPoseURL.value='';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + p.thumb + "\">"
+            }).join("")
+        }
+        if (typeof inputPose !== 'undefined') {
+            inputPose.max = Math.max(0, normalPosesData.length - 1)
+            if (parseInt(inputPose.value, 10) > parseInt(inputPose.max, 10)) {
+                inputPose.value = inputPose.max
+            }
+        }
+    }
+
+    const renderGeneratedPoseList = function(){
+        if (!Array.isArray(generatedPosesData)) { generatedPosesData = [] }
+        var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, 20)
+        if (typeof generatedPoseListItems !== 'undefined') {
+            generatedPoseListItems.innerHTML = list.map(function(g){
+                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset('pose','" + g.url + "')\">×</button></span>"
+            }).join("")
+        }
+        if (typeof btnShowAllGeneratedPoses !== 'undefined') {
+            btnShowAllGeneratedPoses.style.display = (generatedPosesData.length > 20 && !showAllGeneratedPoses) ? 'inline-flex' : 'none'
+        }
+    }
+
+    const renderGeneratedBackgroundList = function(){
+        if (!Array.isArray(generatedBackgroundsData)) { generatedBackgroundsData = [] }
+        var list = showAllGeneratedBackgrounds ? generatedBackgroundsData : generatedBackgroundsData.slice(0, 20)
+        if (typeof generatedBackgroundListItems !== 'undefined') {
+            generatedBackgroundListItems.innerHTML = list.map(function(g){
+                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset('background','" + g.url + "')\">×</button></span>"
+            }).join("")
+        }
+        if (typeof btnShowAllGeneratedBackgrounds !== 'undefined') {
+            btnShowAllGeneratedBackgrounds.style.display = (generatedBackgroundsData.length > 20 && !showAllGeneratedBackgrounds) ? 'inline-flex' : 'none'
+        }
+    }
+
     const populateAssetLists = function () {
         fetch('./assets.php')
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data.normalPoses)) {
-                    poseList.innerHTML = data.normalPoses.map(p => "<img onclick=\"inputPose.value=" + p.index + ";inputPoseURL.value='';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + p.thumb + "\">").join("")
-                    inputPose.max = Math.max(0, data.normalPoses.length - 1)
-                    if (parseInt(inputPose.value, 10) > parseInt(inputPose.max, 10)) {
-                        inputPose.value = inputPose.max
-                    }
+                    normalPosesData = data.normalPoses
+                    renderPoseList()
                 }
                 if (Array.isArray(data.generatedPoses)) {
-                    generatedPoseList.innerHTML = data.generatedPoses.map(g => "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset('pose','" + g.url + "')\">×</button></span>").join("")
+                    generatedPosesData = data.generatedPoses
+                    renderGeneratedPoseList()
                 }
                 if (Array.isArray(data.generatedBackgrounds)) {
-                    generatedBackgroundList.innerHTML = data.generatedBackgrounds.map(g => "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset('background','" + g.url + "')\">×</button></span>").join("")
+                    generatedBackgroundsData = data.generatedBackgrounds
+                    renderGeneratedBackgroundList()
                 }
             })
             .catch(() => { /* ignore */ })
+    }
+
+    // Show-all buttons
+    if (typeof btnShowAllGeneratedPoses !== 'undefined') {
+        btnShowAllGeneratedPoses.addEventListener('click', function(){
+            showAllGeneratedPoses = true
+            renderGeneratedPoseList()
+        })
+    }
+    if (typeof btnShowAllGeneratedBackgrounds !== 'undefined') {
+        btnShowAllGeneratedBackgrounds.addEventListener('click', function(){
+            showAllGeneratedBackgrounds = true
+            renderGeneratedBackgroundList()
+        })
+    }
+    if (typeof btnShowAllPoses !== 'undefined') {
+        btnShowAllPoses.addEventListener('click', function(){
+            renderPoseList()
+        })
     }
 
 

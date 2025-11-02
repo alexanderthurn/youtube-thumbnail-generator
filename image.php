@@ -233,7 +233,7 @@ if ($isGemini) {
 
     $payload = json_encode([
         'contents' => [[ 'parts' => $parts ]],
-        'generationConfig' => [ 'imageConfig' => [ 'aspectRatio' => '16:9' ] ]
+        'generationConfig' => [ 'imageConfig' => [ 'aspectRatio' => ($isPoseGen ? '9:16' : '16:9') ] ]
     ]);
 
     $ch = curl_init($endpoint);
