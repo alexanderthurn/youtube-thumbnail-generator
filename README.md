@@ -26,9 +26,9 @@ The frontend is pure HTML5 Canvas (`index.html`). A tiny PHP helper (`image.php`
 ## Quick start
 ```bash
 # From the project root
-php -S 127.0.0.1:8000
+sudo php -S 127.0.0.1:80
 # Then open in your browser:
-# http://127.0.0.1:8000/index.html
+# http://127.0.0.1:80/index.html
 ```
 
 If you plan to use prompt‑based generation, create a `.env` file first (see below).

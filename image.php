@@ -4,6 +4,41 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
+# --- Helpers ---
+function ensure_dir($dir) {
+    if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+}
+
+function slugify($text, $maxLen = 80) {
+    $text = strtolower($text);
+    $text = preg_replace('/[^a-z0-9\-_. ]+/i', '-', $text);
+    $text = preg_replace('/\s+/', '-', $text);
+    $text = preg_replace('/-+/', '-', $text);
+    $text = trim($text, '-._');
+    if (strlen($text) > $maxLen) {
+        $text = substr($text, 0, $maxLen);
+        $text = rtrim($text, '-._');
+    }
+    return $text === '' ? 'image' : $text;
+}
+
+function write_png_thumbnail($binary, $targetPath, $maxWidth = 256) {
+    if (!function_exists('imagecreatefromstring')) return;
+    $src = @imagecreatefromstring($binary);
+    if ($src === false) return;
+    $w = imagesx($src); $h = imagesy($src);
+    if ($w <= 0 || $h <= 0) { imagedestroy($src); return; }
+    $tw = min($maxWidth, $w);
+    $th = (int)round($tw * $h / $w);
+    $dst = imagecreatetruecolor($tw, $th);
+    imagealphablending($dst, false);
+    imagesavealpha($dst, true);
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $w, $h);
+    @imagepng($dst, $targetPath);
+    imagedestroy($dst);
+    imagedestroy($src);
+}
+
 # --- Eingabe prüfen: https?:// (Proxy) ODER gemini://<prompt> (Generierung) ---
 if (!isset($_GET['url'])) {
     header('HTTP/1.1 404 Not Found'); exit;
@@ -83,12 +118,37 @@ if ($isGemini) {
         }
     }
 
-    # Disk-Cache in img/gemini anhand des Prompt-Hashes
-    $cacheDir = __DIR__ . '/img/gemini';
-    if (!is_dir($cacheDir)) { @mkdir($cacheDir, 0777, true); }
+    # Disk-Cache in img/gemini/<backgrounds|poses> mit Prompt im Dateinamen und Hash-Suffix
+    $baseDir   = __DIR__ . '/img/gemini';
+    $isPoseGen = ($poseUrl !== '');
+    $assetDir  = $baseDir . '/' . ($isPoseGen ? 'poses' : 'backgrounds');
+    $thumbDir  = $baseDir . '/' . ($isPoseGen ? 'poses_thumbs' : 'backgrounds_thumbs');
+    ensure_dir($assetDir);
+    ensure_dir($thumbDir);
+
     $hashSource = $prompt . '|' . ($poseUrl ?: '');
     $hash = sha1($hashSource);
-    $cacheFile = $cacheDir . '/gemini-' . $hash . '.png';
+    $short = substr($hash, 0, 10);
+    $slug = slugify($prompt, 80);
+
+    # Optional: Pose-Index in Dateiname aufnehmen (z.B. pose12)
+    $poseTag = '';
+    if ($isPoseGen) {
+        if (preg_match('#/poses/(\d+)\.png$#', $poseUrl, $m)) {
+            $poseTag = 'pose' . $m[1] . '-';
+        }
+    }
+
+    $filename = $poseTag . $slug . '--' . $short . '.png';
+    $cacheFile = $assetDir . '/' . $filename;
+
+    # Falls bereits vorhanden, alternativ per Glob anhand Hash suchen (Slug kann sich ändern)
+    if (!is_readable($cacheFile)) {
+        $matches = glob($assetDir . '/*--' . $short . '.png');
+        if ($matches && count($matches) > 0) {
+            $cacheFile = $matches[0];
+        }
+    }
 
     if (is_readable($cacheFile)) {
         header('Content-Type: image/png');
@@ -151,8 +211,11 @@ if ($isGemini) {
     $bin = base64_decode($b64, true);
     if ($bin === false) { header('HTTP/1.1 502 Bad Gateway'); echo 'Invalid base64'; exit; }
 
-    # In Cache schreiben und als PNG ausliefern
+    # In Cache schreiben, Thumbnail erzeugen und als PNG ausliefern
     @file_put_contents($cacheFile, $bin);
+    $thumbPath = $thumbDir . '/' . basename($cacheFile);
+    write_png_thumbnail($bin, $thumbPath, 256);
+
     header('Content-Type: image/png');
     header('Cache-Control: public, max-age=31536000, immutable');
     header('Content-Length: ' . strlen($bin));
