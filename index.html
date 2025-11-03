@@ -621,11 +621,24 @@
         })
     }
 
+    // Visual feedback for thumbnail clicks
+    const flashThumb = function(el){
+        try {
+            const img = (el && el.tagName === 'IMG') ? el : (el && el.querySelector && el.querySelector('img'))
+            if (!img) return
+            img.classList.remove('thumb--flash')
+            // Force reflow to restart animation
+            void img.offsetWidth
+            img.classList.add('thumb--flash')
+            setTimeout(function(){ try { img.classList.remove('thumb--flash') } catch(e){} }, 600)
+        } catch(e) { /* ignore */ }
+    }
+
     const renderPoseList = function(){
         if (!Array.isArray(normalPosesData)) { normalPosesData = [] }
         if (typeof poseListItems !== 'undefined') {
             poseListItems.innerHTML = normalPosesData.map(function(p){
-                return "<img onclick=\"inputPose.value=" + p.index + ";inputPoseURL.value='';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + p.thumb + "\">"
+                return "<img class=\"thumb\" onclick=\"inputPose.value=" + p.index + ";inputPoseURL.value='';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender();flashThumb(this)\" src=\"" + p.thumb + "\">"
             }).join("")
         }
         if (typeof inputPose !== 'undefined') {
@@ -641,7 +654,7 @@
         var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedPoseListItems !== 'undefined') {
             generatedPoseListItems.innerHTML = list.map(function(g){
-                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
+                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender();flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
             }).join("")
         }
         if (typeof btnShowAllGeneratedPoses !== 'undefined') {
@@ -654,7 +667,7 @@
         var list = showAllGeneratedBackgrounds ? generatedBackgroundsData : generatedBackgroundsData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedBackgroundListItems !== 'undefined') {
             generatedBackgroundListItems.innerHTML = list.map(function(g){
-                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset(event,'background','" + g.url + "')\">×</button></span>"
+                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender();flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset(event,'background','" + g.url + "')\">×</button></span>"
             }).join("")
         }
         if (typeof btnShowAllGeneratedBackgrounds !== 'undefined') {

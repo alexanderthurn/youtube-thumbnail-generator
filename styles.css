@@ -244,3 +244,19 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 #resultsListItems .assetItem { width: 192px; }
 #resultsListItems .assetItem img { width: 100%; height: auto; }
 
+
+/* Thumbnail click feedback */
+.thumb {
+	border-radius: var(--radius-md);
+	transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.thumb--flash {
+	animation: thumbFlash 520ms ease-out;
+}
+@keyframes thumbFlash {
+	0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 192, 0, 0); }
+	28% { transform: scale(0.96); }
+	56% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(255, 192, 0, 0.35); }
+	100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 192, 0, 0); }
+}
+
