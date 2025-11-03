@@ -24,6 +24,7 @@
         .deleteBtn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; }
         .assetBtn { position: absolute; top: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; }
         .assetBtn--send { right: 24px; }
+        .assetBtn--dl { right: 24px; text-decoration: none; display: inline-block; }
         .selectedControl { background: transparent; outline: 3px solid var(--accent); outline-offset: 2px; }
         .selectedSection { background: var(--accent); color: #000; outline: 0; }
         .canvasFocused { outline: 3px solid var(--accent); }
@@ -441,6 +442,12 @@
 			if (mapped[mi].id === inputThirdURL.id) { currentThirdTarget = mapped[mi].src }
 		}
 
+		// Clear previously loaded images if they are not present in this render cycle
+		var presentIds = mapped.map(function(m){ return m.id })
+		if (presentIds.indexOf(inputBackgroundURL.id) === -1) { imgBackground = null }
+		if (presentIds.indexOf(inputSecondURL.id) === -1) { imgSecond = null; secondProcessedCanvas = null }
+		if (presentIds.indexOf(inputThirdURL.id) === -1) { imgThird = null; thirdProcessedCanvas = null }
+
 		return Promise.all(mapped.map(m => loadImage(m.src))).then(images => {
 			for (var i = 0; i < mapped.length; i++) {
 				const id = mapped[i].id
@@ -825,9 +832,9 @@
         var list = showAllResults ? resultsData : resultsData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof resultsListItems !== 'undefined') {
             var html = list.map(function(r){
-                var dl = '<a class="btn" href="' + r.url + '" download>Download</a>'
-                var rs = r.json ? '<button class="btn" onclick="restoreResultSettings(\'' + r.json + '\')">Restore</button>' : ''
-                return '<span class="assetItem"><a href="' + r.url + '" target="_blank"><img onclick="flashThumb(this)" src="' + r.thumb + '"></a>' + dl + ' ' + rs + '<button class="deleteBtn" title="Delete result" onclick="deleteGeneratedAsset(event,\'result\',\'' + r.url + '\')">×</button></span>'
+                var dlSmall = '<a class="assetBtn assetBtn--dl" title="Download result" href="' + r.url + '" download>↓</a>'
+                var img = r.json ? '<img class="thumb" onclick="restoreResultSettings(\'' + r.json + '\'); flashThumb(this)" src="' + r.thumb + '">' : '<img class="thumb" src="' + r.thumb + '">' 
+                return '<span class="assetItem">' + img + dlSmall + '<button class="deleteBtn" title="Delete result" onclick="deleteGeneratedAsset(event,\'result\',\'' + r.url + '\')">×</button></span>'
             }).join("")
             if (!showAllResults && resultsData.length > THUMBS_PAGE_SIZE) {
                 html += "<span class=\"assetItem\"><button class=\"show-all-tile\" onclick=\"showAllResults=true; renderResultsList()\">＋ Show all</button></span>"
