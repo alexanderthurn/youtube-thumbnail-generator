@@ -129,12 +129,23 @@ html, body {
     #generatedPoseList { grid-column: 1; grid-row: 3; }
     #generatedBackgroundList { grid-column: 1; grid-row: 4; }
     #resultsList { grid-column: 1; grid-row: 5; }
-	.sidebar { grid-column: 2; grid-row: 1 / -1; align-self: start; }
+	/* Keep sidebar visually in right column but out of normal flow so it doesn't push left content */
+	.sidebar {
+		grid-column: 2;
+		grid-row: 1;
+		position: fixed;
+		right: 24px; /* matches .layout horizontal padding */
+		top: 56px;   /* below sticky topbar; adjust if your header height changes */
+		width: 360px;
+		max-height: calc(100vh - 56px);
+		overflow: auto;
+	}
 }
 
 /* Wide screens (≥1920px): larger fixed sidebar */
 @media (min-width: 1920px) {
 	.layout { grid-template-columns: minmax(0, 1fr) 440px; }
+	.sidebar { width: 440px; }
 }
 
 /* Sidebar stacks the cards */
@@ -214,7 +225,17 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 
 /* Thumbnails */
 #generatedPoseListItems img {
-	width: 128px;
+	width: 96px;
+	height: auto;
+}
+
+#poseListItems img {
+	width: 96px;
+	height: auto;
+}
+
+#generatedBackgroundListItems img {
+	width: 160px;
 	height: auto;
 }
 
