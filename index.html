@@ -638,7 +638,7 @@
         if (!Array.isArray(normalPosesData)) { normalPosesData = [] }
         if (typeof poseListItems !== 'undefined') {
             poseListItems.innerHTML = normalPosesData.map(function(p){
-                return "<img class=\"thumb\" onclick=\"inputPose.value=" + p.index + ";inputPoseURL.value='';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender();flashThumb(this)\" src=\"" + p.thumb + "\">"
+                return "<img class=\"thumb\" onclick=\"inputPose.value=" + p.index + ";inputPoseURL.value='';if (typeof chkPoseMask!=='undefined'){ chkPoseMask.checked=true; } inputPoseTolerance.value=0; inputPoseSoftness.value=0; inputPoseKeyColor.value='#ff00ff'; inputPoseKeyColor.dataset.sampled='1'; loadImagesAndRender(); flashThumb(this)\" src=\"" + p.thumb + "\">"
             }).join("")
         }
         if (typeof inputPose !== 'undefined') {
@@ -654,7 +654,7 @@
         var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedPoseListItems !== 'undefined') {
             generatedPoseListItems.innerHTML = list.map(function(g){
-                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender();flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
+                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "'; if (typeof chkPoseMask!=='undefined'){ chkPoseMask.checked=true; } inputPoseTolerance.value=20; inputPoseSoftness.value=20; inputPoseKeyColor.dataset.sampled=''; loadImagesAndRender(); flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
             }).join("")
         }
         if (typeof btnShowAllGeneratedPoses !== 'undefined') {

@@ -225,17 +225,17 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 
 /* Thumbnails */
 #generatedPoseListItems img {
-	width: 96px;
+	width: 64px;
 	height: auto;
 }
 
 #poseListItems img {
-	width: 96px;
+	width: 64px;
 	height: auto;
 }
 
 #generatedBackgroundListItems img {
-	width: 160px;
+	width: 192px;
 	height: auto;
 }
 

@@ -135,6 +135,36 @@ Generated images are cached on disk under `img/gemini/` using a SHA‑1 hash of 
 - Requests to third‑party services (Gemini, Unsplash) include your API keys when configured.
 - The proxy only forwards image responses and strips non‑image content.
 
+## Pose image preparation (9:16 utility)
+Use `misc/pose_9_16.sh` to batch‑prepare pose assets for consistent compositing:
+- Trims transparent edges.
+- Pads to exact 9:16 with bottom alignment (no padding below the subject).
+- Unifies all results to the same 9:16 size (largest width among inputs).
+- Optionally optimizes PNGs with `pngquant` if installed.
+
+Requirements:
+- ImageMagick (`magick` or `convert`/`identify`), optional `pngquant`.
+
+Typical usage:
+- From the project root, targeting `img/poses`:
+```bash
+bash misc/pose_9_16.sh img/poses_9x16 img/poses/*.{png,PNG,webp,WEBP,jpg,JPG,jpeg,JPEG}
+```
+- Or from inside `img/poses`:
+```bash
+cd img/poses
+bash ../../misc/pose_9_16.sh poses_9x16
+```
+
+Outputs:
+- Raw 9:16 results: `<OUTDIR>` (default `_out_9x16`)
+- Uniform + optimized: `<OUTDIR>_uniform`
+
+Notes:
+- Outputs are PNG with alpha preserved.
+- After reviewing results in `<OUTDIR>_uniform`, you can copy them into `img/poses/`.
+- Thumbnails in `img/poses_thumbs/` are not created by this script.
+
 ## License
 MIT License
 
