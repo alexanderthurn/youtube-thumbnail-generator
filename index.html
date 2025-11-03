@@ -34,7 +34,7 @@
             <span class="topbar__title">Free Youtube Thumbnail Generator</span>
         </div>
         <div class="topbar__right">
-            
+            <a class="btn btn--primary" href="https://github.com/alexanderthurn/free-youtube-thumbnail-generator" target="_blank" rel="noopener">Github</a>
         </div>
     </header>
     <main class="layout">
@@ -85,7 +85,7 @@
     </section>
 
     <section class="panel glass" id="card-canvascolor">
-        <div class="ui-level-0">Canvas color: <input id="inputCanvasColor" type="color" value="#000000"> <span class="color-swatches">
+        <div class="ui-level-0">Background color: <input id="inputCanvasColor" type="color" value="#000000"> <span class="color-swatches">
             <button class="swatch" title="Brand" style="--c:#ffc000; background: var(--c);" onclick="inputCanvasColor.value='#ffc000'; render()" aria-label="Brand color"></button>
             <button class="swatch" title="Pink" style="--c:#ff00ff; background: var(--c);" onclick="inputCanvasColor.value='#ff00ff'; render()" aria-label="Pink"></button>
             <button class="swatch" title="Cyan" style="--c:#00ffff; background: var(--c);" onclick="inputCanvasColor.value='#00ffff'; render()" aria-label="Cyan"></button>
@@ -95,6 +95,16 @@
             <button class="swatch" title="Black" style="--c:#000000; background: var(--c);" onclick="inputCanvasColor.value='#000000'; render()" aria-label="Black"></button>
             <button class="swatch" title="White" style="--c:#ffffff; background: var(--c);" onclick="inputCanvasColor.value='#ffffff'; render()" aria-label="White"></button>
         </span></div>
+    </section>
+
+    <section class="panel glass" id="card-mode">
+        <div class="ui-level-0">Mode:
+            <select id="selectUiLevel">
+                <option value="0">Simple</option>
+                <option value="1">Advanced</option>
+                <option value="2">Expert</option>
+            </select>
+        </div>
     </section>
 
     
@@ -130,18 +140,11 @@
 
     <footer class="footer">
         <div class="footer__left">
-            <span>by Alexander Thurn - Open source</span>
-            <a href="https://github.com/alexanderthurn/free-youtube-thumbnail-generator" target="_blank" rel="noopener">GitHub</a>
+            <span>by Alexander Thurn </span>
+            <a href="https://alexander-thurn.de" target="_blank" rel="noopener">alexander-thurn.de</a>
         </div>
         <div class="footer__right">
             <label class="ui-level-2"><input type="checkbox" id="toggleReducedMotion"> Reduced motion</label>
-            <label>Mode:
-                <select id="selectUiLevel">
-                    <option value="0">Simple</option>
-                    <option value="1">Advanced</option>
-                    <option value="2">Expert</option>
-                </select>
-            </label>
         </div>
     </footer>
 </body>
