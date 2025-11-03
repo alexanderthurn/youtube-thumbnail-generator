@@ -62,6 +62,40 @@ UNSPLASH_CLIENT_ID=your_unsplash_client_id
 6. DeepLink updates as you work; copy it to share a reproducible state.
 7. Click Download to save the composed canvas as a JPEG.
 
+## Controls
+
+### Keyboard
+- **Selection**
+  - **1**: Background
+  - **2**: Pose
+  - **3**: Text1
+  - **4**: Text2
+  - **5**: SecondImage
+  - **6**: ThirdImage
+  - **0 / 7 / 8 / 9**: Clear selection
+- **Move**
+  - **Arrow keys** or **W/A/S/D**: Move selected element
+  - **Hold Shift**: Fine step movement (1px instead of 10px)
+- **Rotate**
+  - **Q / E**: Rotate selected element
+  - **Hold Shift**: Fine rotation (1° instead of 5°)
+- **Scale**
+  - **+ / -**: Increase / decrease scale of selected element
+  - **R / F**: Alternative scale shortcuts (R = bigger, F = smaller)
+  - **Hold Shift**: Fine scale steps
+
+### Mouse and touch
+- **Left‑click** canvas to select; click again on the same spot to cycle layers under the cursor.
+- **Drag (Left mouse)**: Move selected element.
+- **Drag (Middle mouse)**: Scale selected element.
+- **Drag (Right mouse)**: Rotate selected element.
+- **Mouse wheel over canvas**: Scale selected element (Shift = reduce sensitivity).
+- **Touch (one finger)**: Drag to move selected element.
+
+### Lists and assets
+- **AI Poses** and **AI Backgrounds** are paginated by default; use the “Show all” button to reveal all items.
+- **Delete generated item**: Click the “×” on a thumbnail. Hold **Shift** while clicking to delete without confirmation.
+
 ## How it works
 - Frontend (`index.html`):
   - Renders everything via HTML5 Canvas in 1280×720 by default.
@@ -123,4 +157,5 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
 

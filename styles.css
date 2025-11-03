@@ -210,4 +210,10 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 	resize: vertical;
 }
 
+/* Thumbnails */
+#generatedPoseListItems img {
+	width: 128px;
+	height: auto;
+}
+
 

@@ -101,7 +101,7 @@
     </section>
 
     <div id="poseList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">Poses</span> <button id="btnShowAllPoses" class="btn">Show all</button></div>
+        <div class="thumbs-header"><span class="thumbs-title">Poses</span></div>
         <div id="poseListItems"></div>
     </div>
     <div id="generatedPoseList" class="ui-level-1">
@@ -109,7 +109,7 @@
         <div id="generatedPoseListItems"></div>
     </div>
     <div id="generatedBackgroundList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">Background</span> <button id="btnShowAllGeneratedBackgrounds" class="btn">Show all</button></div>
+        <div class="thumbs-header"><span class="thumbs-title">AI Backgrounds</span> <button id="btnShowAllGeneratedBackgrounds" class="btn">Show all</button></div>
         <div id="generatedBackgroundListItems"></div>
     </div>
     </main>
@@ -151,6 +151,9 @@
     var poseProcessedCanvas = null
     var secondProcessedCanvas = null
     var thirdProcessedCanvas = null
+
+    // Thumbnail pagination size (change here to adjust page size)
+    const THUMBS_PAGE_SIZE = 5
 
     // Asset list state
     var normalPosesData = []
@@ -344,11 +347,11 @@
         ctx.textAlign = "end"
         ctx.textBaseline = "bottom"
         ctx.fillStyle = colorBrand //<======= here
-        // Color of the shadow;  RGB, RGBA, HSL, HEX, and other inputs are valid.
-        ctx.shadowColor = "white"; // string
-        ctx.shadowOffsetX = 0; // integer
-        ctx.shadowOffsetY = 0; // integer
-        ctx.shadowBlur = 50; // integer
+        // Disable glow/shadow for solid style
+        ctx.shadowColor = "transparent";
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = 0;
 
         drawTextT(inputText1.value, inputText1.id, canvas.width - 50, canvas.height - 50)
         ctx.restore()
@@ -363,10 +366,11 @@
         ctx.textAlign = "start"
         ctx.textBaseline = "bottom"
         ctx.fillStyle = 'white' //<======= here
-        ctx.shadowColor = "white"; // string
-        ctx.shadowOffsetX = 0; // integer
-        ctx.shadowOffsetY = 0; // integer
-        ctx.shadowBlur = 50; // integer
+        // Disable glow/shadow for solid style
+        ctx.shadowColor = "transparent";
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = 0;
 
         drawTextT(inputText2.value, inputText2.id, 50, canvas.height - 50)
 
@@ -408,6 +412,15 @@
         if (tb === 'bottom' || tb === 'ideographic') offY = -h
         else if (tb === 'middle') offY = -h / 2
         else offY = 0 // top/hanging/alphabetic approximated as top
+        // Draw solid background for Text1 (black) and Text2 (brand yellow)
+        const bgColor = (tid === inputText1.id) ? 'black' : (tid === inputText2.id ? colorBrand : '')
+        if (bgColor) {
+            const prevFill = ctx.fillStyle
+            const padX = 12, padY = 8
+            ctx.fillStyle = bgColor
+            ctx.fillRect(offX - padX, offY - padY, w + padX * 2, h + padY * 2)
+            ctx.fillStyle = prevFill
+        }
         ctx.fillText(text, 0, 0)
         ctx.strokeText(text, 0, 0)
         if (typeof selectedId !== 'undefined' && selectedId === tid) {
@@ -615,27 +628,27 @@
 
     const renderGeneratedPoseList = function(){
         if (!Array.isArray(generatedPosesData)) { generatedPosesData = [] }
-        var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, 20)
+        var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedPoseListItems !== 'undefined') {
             generatedPoseListItems.innerHTML = list.map(function(g){
-                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset('pose','" + g.url + "')\">×</button></span>"
+                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "';inputPoseKeyColor.dataset.sampled='';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
             }).join("")
         }
         if (typeof btnShowAllGeneratedPoses !== 'undefined') {
-            btnShowAllGeneratedPoses.style.display = (generatedPosesData.length > 20 && !showAllGeneratedPoses) ? 'inline-flex' : 'none'
+            btnShowAllGeneratedPoses.style.display = (generatedPosesData.length > THUMBS_PAGE_SIZE && !showAllGeneratedPoses) ? 'inline-flex' : 'none'
         }
     }
 
     const renderGeneratedBackgroundList = function(){
         if (!Array.isArray(generatedBackgroundsData)) { generatedBackgroundsData = [] }
-        var list = showAllGeneratedBackgrounds ? generatedBackgroundsData : generatedBackgroundsData.slice(0, 20)
+        var list = showAllGeneratedBackgrounds ? generatedBackgroundsData : generatedBackgroundsData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedBackgroundListItems !== 'undefined') {
             generatedBackgroundListItems.innerHTML = list.map(function(g){
-                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset('background','" + g.url + "')\">×</button></span>"
+                return "<span class=\"assetItem\"><img title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender()\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset(event,'background','" + g.url + "')\">×</button></span>"
             }).join("")
         }
         if (typeof btnShowAllGeneratedBackgrounds !== 'undefined') {
-            btnShowAllGeneratedBackgrounds.style.display = (generatedBackgroundsData.length > 20 && !showAllGeneratedBackgrounds) ? 'inline-flex' : 'none'
+            btnShowAllGeneratedBackgrounds.style.display = (generatedBackgroundsData.length > THUMBS_PAGE_SIZE && !showAllGeneratedBackgrounds) ? 'inline-flex' : 'none'
         }
     }
 
@@ -672,11 +685,7 @@
             renderGeneratedBackgroundList()
         })
     }
-    if (typeof btnShowAllPoses !== 'undefined') {
-        btnShowAllPoses.addEventListener('click', function(){
-            renderPoseList()
-        })
-    }
+    
 
 
 
@@ -1471,12 +1480,17 @@
     })
 
     // Deletion of generated assets (one-by-one)
-    function deleteGeneratedAsset(type, url) {
+    function deleteGeneratedAsset(a, b, c) {
         try {
+            // Support both signatures: (type, url) and (event, type, url)
+            var evt = (typeof a === 'object' && a && typeof a.type === 'string') ? a : null;
+            var type = (evt ? b : a);
+            var url = (evt ? c : b);
             const parts = String(url || '').split('/');
             const fname = parts[parts.length - 1];
             if (!fname) { return; }
-            if (!confirm('Delete this ' + type + '?')) { return; }
+            const skipConfirm = !!(evt && evt.shiftKey);
+            if (!skipConfirm && !confirm('Delete this ' + type + '?')) { return; }
             const body = 'action=delete&type=' + encodeURIComponent(type) + '&file=' + encodeURIComponent(fname)
             fetch('./assets.php', {
                 method: 'POST',
