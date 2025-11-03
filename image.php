@@ -313,11 +313,20 @@ if ($isGemini) {
         }
     }
 
-    # Disk-Cache in img/gemini/<backgrounds|poses> mit Prompt im Dateinamen und Hash-Suffix
+    # Disk-Cache in img/gemini/<backgrounds|poses|objects> mit Prompt im Dateinamen und Hash-Suffix
     $baseDir   = __DIR__ . '/img/gemini';
     $isPoseGen = ($poseUrl !== '' || (is_string($poseDataParam) && $poseDataParam !== ''));
-    $assetDir  = $baseDir . '/' . ($isPoseGen ? 'poses' : 'backgrounds');
-    $thumbDir  = $baseDir . '/' . ($isPoseGen ? 'poses_thumbs' : 'backgrounds_thumbs');
+    $kind      = trim((string)get_param('kind', ''));
+    if ($isPoseGen) {
+        $assetDir = $baseDir . '/poses';
+        $thumbDir = $baseDir . '/poses_thumbs';
+    } else if (strcasecmp($kind, 'object') === 0 || strcasecmp($kind, 'objects') === 0) {
+        $assetDir = $baseDir . '/objects';
+        $thumbDir = $baseDir . '/objects_thumbs';
+    } else {
+        $assetDir = $baseDir . '/backgrounds';
+        $thumbDir = $baseDir . '/backgrounds_thumbs';
+    }
     ensure_dir($assetDir);
     ensure_dir($thumbDir);
 

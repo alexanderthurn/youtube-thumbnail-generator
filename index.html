@@ -22,6 +22,8 @@
         .assetItem { position: relative; display: inline-block; margin: 2px; vertical-align: top; }
         .assetItem img { display: block; }
         .deleteBtn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; }
+        .assetBtn { position: absolute; top: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; }
+        .assetBtn--send { right: 24px; }
         .selectedControl { background: transparent; outline: 3px solid var(--accent); outline-offset: 2px; }
         .selectedSection { background: var(--accent); color: #000; outline: 0; }
         .canvasFocused { outline: 3px solid var(--accent); }
@@ -135,6 +137,7 @@
                 <button id="tabPoses" class="btn">Poses</button>
                 <button id="tabAiPoses" class="btn">AI Poses</button>
                 <button id="tabAiBackgrounds" class="btn">AI Backgrounds</button>
+                <button id="tabAiObjects" class="btn">AI Objects</button>
                 <button id="tabHistory" class="btn">History</button>
             </div>
         </div>
@@ -148,6 +151,9 @@
     </div>
     <div id="generatedBackgroundList" class="ui-level-1" style="display:none;">
         <div id="generatedBackgroundListItems"></div>
+    </div>
+    <div id="generatedObjectList" class="ui-level-1" style="display:none;">
+        <div id="generatedObjectListItems"></div>
     </div>
     <div id="resultsList" class="ui-level-1" style="display:none;">
         <div id="resultsListItems"></div>
@@ -191,9 +197,11 @@
     var normalPosesData = []
     var generatedPosesData = []
     var generatedBackgroundsData = []
+    var generatedObjectsData = []
     var resultsData = []
     var showAllGeneratedPoses = false
     var showAllGeneratedBackgrounds = false
+    var showAllGeneratedObjects = false
     var showAllResults = false
 
 
@@ -392,15 +400,16 @@
 		// Map URLs
 		const mapped = entries.map(e => {
 			var finalUrl = e.url
-			if (finalUrl.indexOf('gemini://') === 0) {
-				if (e.id === inputPose.id) {
+            if (finalUrl.indexOf('gemini://') === 0) {
+                if (e.id === inputPose.id) {
 					const poseImageUrl = poseRefOverride || ('img/poses/' + inputPose.value + '.png')
 					finalUrl = './image.php?url=' + encodeURIComponent(finalUrl) + '&pose=' + encodeURIComponent(poseImageUrl) + '&ar=' + encodeURIComponent('9:16')
 					poseRefOverride = ''
-				} else {
-					let extra = ''
-					if (e.id === inputBackgroundURL.id || e.id === inputSecondURL.id || e.id === inputThirdURL.id) { extra = '&ar=' + encodeURIComponent('16:9') }
-					finalUrl = './image.php?url=' + encodeURIComponent(finalUrl) + extra
+                } else {
+                    let extra = ''
+                    if (e.id === inputBackgroundURL.id) { extra = '&ar=' + encodeURIComponent('16:9') }
+                    if (e.id === inputSecondURL.id || e.id === inputThirdURL.id) { extra = '&ar=' + encodeURIComponent('16:9') + '&kind=object' }
+                    finalUrl = './image.php?url=' + encodeURIComponent(finalUrl) + extra
 				}
 			} else if (finalUrl.indexOf('unsplash.com') > -1 && finalUrl.indexOf('proxyoff') == -1) {
 				finalUrl = './image.php?url=' + encodeURIComponent(finalUrl)
@@ -767,6 +776,21 @@
         }
     }
 
+    const renderGeneratedObjectList = function(){
+        if (!Array.isArray(generatedObjectsData)) { generatedObjectsData = [] }
+        var list = showAllGeneratedObjects ? generatedObjectsData : generatedObjectsData.slice(0, THUMBS_PAGE_SIZE)
+        if (typeof generatedObjectListItems !== 'undefined') {
+            var html = list.map(function(g){
+                var sendToThirdBtn = '<button class="assetBtn assetBtn--send" title="Send to Image2" onclick="event.stopPropagation(); inputThirdURL.value=\'' + g.url + '\'; loadImagesAndRender()">→2</button>'
+                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputSecondURL.value='" + g.url + "';loadImagesAndRender();flashThumb(this)\" src=\"" + g.thumb + "\">" + sendToThirdBtn + "<button class=\"deleteBtn\" title=\"Delete object\" onclick=\"deleteGeneratedAsset(event,'object','" + g.url + "')\">×</button></span>"
+            }).join("")
+            if (!showAllGeneratedObjects && generatedObjectsData.length > THUMBS_PAGE_SIZE) {
+                html += "<span class=\"assetItem\"><button class=\"show-all-tile\" onclick=\"showAllGeneratedObjects=true; renderGeneratedObjectList()\">＋ Show all</button></span>"
+            }
+            generatedObjectListItems.innerHTML = html
+        }
+    }
+
     const renderResultsList = function(){
         if (!Array.isArray(resultsData)) { resultsData = [] }
         var list = showAllResults ? resultsData : resultsData.slice(0, THUMBS_PAGE_SIZE)
@@ -798,6 +822,10 @@
                 if (Array.isArray(data.generatedBackgrounds)) {
                     generatedBackgroundsData = data.generatedBackgrounds
                     renderGeneratedBackgroundList()
+                }
+                if (Array.isArray(data.generatedObjects)) {
+                    generatedObjectsData = data.generatedObjects
+                    renderGeneratedObjectList()
                 }
                 if (Array.isArray(data.results)) {
                     resultsData = data.results
@@ -835,12 +863,14 @@
         poses: 'poseList',
         aiPoses: 'generatedPoseList',
         aiBackgrounds: 'generatedBackgroundList',
+        aiObjects: 'generatedObjectList',
         history: 'resultsList'
     }
     const TAB_BUTTONS = {
         poses: 'tabPoses',
         aiPoses: 'tabAiPoses',
         aiBackgrounds: 'tabAiBackgrounds',
+        aiObjects: 'tabAiObjects',
         history: 'tabHistory'
     }
     const setActiveTab = function(name){
@@ -1004,14 +1034,16 @@
 			if (inputPoseURL.value) { poseRef = toProxyUrl(inputPoseURL.value) } else { poseRef = 'img/poses/' + inputPose.value + '.png' }
 			if (poseRef) { finalUrl += '&ref_pose=' + encodeURIComponent(poseRef) }
 		}
-		if (typeof chkBgSecond !== 'undefined' && chkBgSecond.checked && inputSecondURL.value) {
-			const secRef = toProxyUrl(inputSecondURL.value)
-			if (secRef) { finalUrl += '&ref_second=' + encodeURIComponent(secRef) }
-		}
-		if (typeof chkBgThird !== 'undefined' && chkBgThird.checked && inputThirdURL.value) {
-			const thRef = toProxyUrl(inputThirdURL.value)
-			if (thRef) { finalUrl += '&ref_third=' + encodeURIComponent(thRef) }
-		}
+        if (typeof chkBgSecond !== 'undefined' && chkBgSecond.checked && inputSecondURL.value) {
+            let secRef = ensureProxyUrl(inputSecondURL.value)
+            if (String(inputSecondURL.value).indexOf('gemini://') === 0) { secRef += '&kind=object' }
+            if (secRef) { finalUrl += '&ref_second=' + encodeURIComponent(secRef) }
+        }
+        if (typeof chkBgThird !== 'undefined' && chkBgThird.checked && inputThirdURL.value) {
+            let thRef = ensureProxyUrl(inputThirdURL.value)
+            if (String(inputThirdURL.value).indexOf('gemini://') === 0) { thRef += '&kind=object' }
+            if (thRef) { finalUrl += '&ref_third=' + encodeURIComponent(thRef) }
+        }
 		inputBackgroundURL.value = finalUrl
 		suspendPoseGeminiOnce = true
 		loadImagesAndRender()
@@ -1916,6 +1948,11 @@
                         }
                         if (type === 'background' && (inputBackgroundURL.value || '').endsWith('/' + fname)) {
                             inputBackgroundURL.value = '';
+                            loadImagesAndRender();
+                        }
+                        if (type === 'object') {
+                            if ((inputSecondURL.value || '').endsWith('/' + fname)) { inputSecondURL.value = ''; }
+                            if ((inputThirdURL.value || '').endsWith('/' + fname)) { inputThirdURL.value = ''; }
                             loadImagesAndRender();
                         }
                         populateAssetLists();

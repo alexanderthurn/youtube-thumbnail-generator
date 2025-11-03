@@ -146,6 +146,7 @@ button.icon-btn {
 #poseList { grid-column: 1; grid-row: 3; }
 #generatedPoseList { grid-column: 1; grid-row: 4; }
 #generatedBackgroundList { grid-column: 1; grid-row: 5; }
+#generatedObjectList { grid-column: 1; grid-row: 5; }
 #resultsList { grid-column: 1; grid-row: 6; }
 
 /* Medium and up (≥1024px): two columns, flexible canvas left + fixed sidebar right */
@@ -156,6 +157,7 @@ button.icon-btn {
     #poseList { grid-column: 1; grid-row: 3; }
     #generatedPoseList { grid-column: 1; grid-row: 4; }
     #generatedBackgroundList { grid-column: 1; grid-row: 5; }
+    #generatedObjectList { grid-column: 1; grid-row: 5; }
     #resultsList { grid-column: 1; grid-row: 6; }
 	/* Keep sidebar visually in right column but out of normal flow so it doesn't push left content */
 	.sidebar {
@@ -197,6 +199,9 @@ button.icon-btn {
 
 /* Canvas wrap groups canvas + actions tightly */
 .canvas-wrap { display: flex; flex-direction: column; gap: 4px; }
+
+/* Mini button used inside asset tiles */
+.miniBtn { padding: 2px 6px; font-size: 12px; border: 1px solid rgba(0,0,0,0.1); background: #f7f7f7; cursor: pointer; }
 
 /* Focus styles */
 :where(a, button, input, select, textarea):focus-visible {

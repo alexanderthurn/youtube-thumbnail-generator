@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $file = isset($_POST['file']) ? $_POST['file'] : '';
 
         // Only allow specific types
-        if (!in_array($type, ['pose', 'background', 'result'], true)) {
+        if (!in_array($type, ['pose', 'background', 'object', 'result'], true)) {
             echo json_encode(['success' => false, 'error' => 'Invalid type']);
             exit;
         }
@@ -43,6 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else if ($type === 'background') {
             $original = $root . '/img/gemini/backgrounds/' . $basename;
             $thumb = $root . '/img/gemini/backgrounds_thumbs/' . $basename;
+            $json = null;
+        } else if ($type === 'object') {
+            $original = $root . '/img/gemini/objects/' . $basename;
+            $thumb = $root . '/img/gemini/objects_thumbs/' . $basename;
             $json = null;
         } else { // result
             $original = $root . '/img/results/' . $basename;
@@ -232,6 +236,32 @@ foreach ($gemBgFiles as $f) {
     ];
 }
 
+// Gemini generated objects
+$gemObjDir = $root . '/img/gemini/objects';
+$gemObjThumbsDir = $root . '/img/gemini/objects_thumbs';
+@mkdir($gemObjDir, 0777, true);
+@mkdir($gemObjThumbsDir, 0777, true);
+$gemObjFiles = list_files($gemObjDir . '/*.png');
+$generatedObjects = [];
+foreach ($gemObjFiles as $f) {
+    $bn = basename($f);
+    $prompt = $bn;
+    $hash = '';
+    if (preg_match('/^(.+?)--([a-f0-9]{10})\.png$/i', $bn, $m)) {
+        $prompt = str_replace('-', ' ', $m[1]);
+        $hash = $m[2];
+    } else {
+        $prompt = preg_replace('/\.png$/i', '', $prompt);
+        $prompt = str_replace('-', ' ', $prompt);
+    }
+    $generatedObjects[] = [
+        'url'   => to_web_path($f),
+        'thumb' => file_exists($gemObjThumbsDir . '/' . $bn) ? to_web_path($gemObjThumbsDir . '/' . $bn) : to_web_path($f),
+        'prompt'=> $prompt,
+        'hash'  => $hash,
+    ];
+}
+
 // Saved results (downloaded composites)
 $resDir = $root . '/img/results';
 $resThumbsDir = $root . '/img/results_thumbs';
@@ -266,6 +296,7 @@ echo json_encode([
     'normalPoses' => $normalPoses,
     'generatedPoses' => $generatedPoses,
     'generatedBackgrounds' => $generatedBackgrounds,
+    'generatedObjects' => $generatedObjects,
     'results' => $results,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 exit;
