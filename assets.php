@@ -9,7 +9,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 $root = __DIR__;
 
-// Handle deletion requests
+// Handle POST actions (delete, save_result)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = isset($_POST['action']) ? $_POST['action'] : '';
     if ($action === 'delete') {
@@ -46,6 +46,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         echo json_encode(['success' => $ok]);
+        exit;
+    } else if ($action === 'save_result') {
+        // Save a composed canvas image and its settings JSON
+        $root = __DIR__;
+        $resultsDir = $root . '/img/results';
+        $resultsThumbsDir = $root . '/img/results_thumbs';
+        if (!is_dir($resultsDir)) { @mkdir($resultsDir, 0777, true); }
+        if (!is_dir($resultsThumbsDir)) { @mkdir($resultsThumbsDir, 0777, true); }
+
+        $filename = isset($_POST['filename']) ? trim($_POST['filename']) : '';
+        $settings = isset($_POST['settings']) ? $_POST['settings'] : '';
+
+        // Validate settings JSON (optional)
+        $settingsObj = null;
+        if ($settings !== '') {
+            $tmp = json_decode($settings, true);
+            if (json_last_error() === JSON_ERROR_NONE) { $settingsObj = $tmp; }
+        }
+
+        // Expect an uploaded file field named 'image'
+        if (!isset($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+            echo json_encode(['success' => false, 'error' => 'Missing image upload']);
+            exit;
+        }
+        $tmpPath = $_FILES['image']['tmp_name'];
+        $mime = @mime_content_type($tmpPath) ?: 'image/jpeg';
+        $ext = '.jpg';
+        if (stripos($mime, 'png') !== false) { $ext = '.png'; }
+        else if (stripos($mime, 'jpeg') !== false || stripos($mime, 'jpg') !== false) { $ext = '.jpg'; }
+        else if (stripos($mime, 'webp') !== false) { $ext = '.jpg'; }
+
+        // Build unique base name
+        $base = preg_replace('/\.[A-Za-z0-9]+$/', '', basename($filename));
+        if ($base === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $base)) {
+            $base = 'result';
+        }
+        $bytes = @file_get_contents($tmpPath) ?: '';
+        $hash = substr(sha1($bytes . '|' . $settings), 0, 10);
+        $ts = date('Ymd-His');
+        $finalBase = $base . '--' . $ts . '--' . $hash;
+        $finalImage = $resultsDir . '/' . $finalBase . $ext;
+        $finalJson = $resultsDir . '/' . $finalBase . '.json';
+        $finalThumb = $resultsThumbsDir . '/' . $finalBase . $ext;
+
+        if (!@move_uploaded_file($tmpPath, $finalImage)) {
+            // fallback copy
+            @copy($tmpPath, $finalImage);
+        }
+        // Write JSON settings
+        $meta = [
+            'createdAt' => gmdate('c'),
+            'filename' => basename($finalImage),
+            'mime' => $mime,
+            'settings' => ($settingsObj !== null ? $settingsObj : $settings)
+        ];
+        @file_put_contents($finalJson, json_encode($meta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+        // Create thumbnail (max width 256)
+        $bin = @file_get_contents($finalImage);
+        if ($bin !== false && function_exists('imagecreatefromstring')) {
+            $src = @imagecreatefromstring($bin);
+            if ($src !== false) {
+                $w = imagesx($src); $h = imagesy($src);
+                if ($w > 0 && $h > 0) {
+                    $tw = min(256, $w);
+                    $th = (int)round($tw * $h / $w);
+                    $dst = imagecreatetruecolor($tw, $th);
+                    imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $w, $h);
+                    if ($ext === '.png') { @imagepng($dst, $finalThumb); }
+                    else { @imagejpeg($dst, $finalThumb, 90); }
+                    imagedestroy($dst);
+                }
+                imagedestroy($src);
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'url' => to_web_path($finalImage),
+            'thumb' => to_web_path($finalThumb),
+            'json' => to_web_path($finalJson)
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         exit;
     }
 }
@@ -134,10 +216,41 @@ foreach ($gemBgFiles as $f) {
     ];
 }
 
+// Saved results (downloaded composites)
+$resDir = $root . '/img/results';
+$resThumbsDir = $root . '/img/results_thumbs';
+@mkdir($resDir, 0777, true);
+@mkdir($resThumbsDir, 0777, true);
+$resFiles = list_files($resDir . '/*.{png,PNG,jpg,JPG,jpeg,JPEG}');
+// glob with brace not enabled by default; fallback manual merge
+if (!$resFiles) {
+    $resFiles = array_merge(
+        list_files($resDir . '/*.png'),
+        list_files($resDir . '/*.PNG'),
+        list_files($resDir . '/*.jpg'),
+        list_files($resDir . '/*.JPG'),
+        list_files($resDir . '/*.jpeg'),
+        list_files($resDir . '/*.JPEG')
+    );
+}
+$results = [];
+foreach ($resFiles as $f) {
+    $bn = basename($f);
+    $baseNoExt = preg_replace('/\.[A-Za-z0-9]+$/', '', $bn);
+    $jsonPath = $resDir . '/' . $baseNoExt . '.json';
+    $thumbPath = $resThumbsDir . '/' . $bn;
+    $results[] = [
+        'url' => to_web_path($f),
+        'thumb' => file_exists($thumbPath) ? to_web_path($thumbPath) : to_web_path($f),
+        'json' => file_exists($jsonPath) ? to_web_path($jsonPath) : ''
+    ];
+}
+
 echo json_encode([
     'normalPoses' => $normalPoses,
     'generatedPoses' => $generatedPoses,
     'generatedBackgrounds' => $generatedBackgrounds,
+    'results' => $results,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 exit;
 

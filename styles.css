@@ -119,6 +119,7 @@ html, body {
 #poseList { grid-column: 1; grid-row: 3; }
 #generatedPoseList { grid-column: 1; grid-row: 4; }
 #generatedBackgroundList { grid-column: 1; grid-row: 5; }
+#resultsList { grid-column: 1; grid-row: 6; }
 
 /* Medium and up (≥1024px): two columns, flexible canvas left + fixed sidebar right */
 @media (min-width: 1024px) {
@@ -127,6 +128,7 @@ html, body {
     #poseList { grid-column: 1; grid-row: 2; }
     #generatedPoseList { grid-column: 1; grid-row: 3; }
     #generatedBackgroundList { grid-column: 1; grid-row: 4; }
+    #resultsList { grid-column: 1; grid-row: 5; }
 	.sidebar { grid-column: 2; grid-row: 1 / -1; align-self: start; }
 }
 

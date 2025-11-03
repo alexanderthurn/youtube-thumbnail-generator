@@ -112,6 +112,10 @@
         <div class="thumbs-header"><span class="thumbs-title">AI Backgrounds</span> <button id="btnShowAllGeneratedBackgrounds" class="btn">Show all</button></div>
         <div id="generatedBackgroundListItems"></div>
     </div>
+    <div id="resultsList" class="ui-level-1">
+        <div class="thumbs-header"><span class="thumbs-title">Results</span> <button id="btnShowAllResults" class="btn">Show all</button></div>
+        <div id="resultsListItems"></div>
+    </div>
     </main>
 
     <footer class="footer">
@@ -159,8 +163,10 @@
     var normalPosesData = []
     var generatedPosesData = []
     var generatedBackgroundsData = []
+    var resultsData = []
     var showAllGeneratedPoses = false
     var showAllGeneratedBackgrounds = false
+    var showAllResults = false
 
 
     //inputBackgroundURL.value = urlBackground
@@ -365,7 +371,7 @@
         ctx.lineWidth = 4
         ctx.textAlign = "start"
         ctx.textBaseline = "bottom"
-        ctx.fillStyle = 'white' //<======= here
+        ctx.fillStyle = 'black' //<======= here
         // Disable glow/shadow for solid style
         ctx.shadowColor = "transparent";
         ctx.shadowOffsetX = 0;
@@ -412,23 +418,27 @@
         if (tb === 'bottom' || tb === 'ideographic') offY = -h
         else if (tb === 'middle') offY = -h / 2
         else offY = 0 // top/hanging/alphabetic approximated as top
-        // Draw solid background for Text1 (black) and Text2 (brand yellow)
+        // Draw solid background for Text1 (black) and Text2 (brand yellow) with border
         const bgColor = (tid === inputText1.id) ? 'black' : (tid === inputText2.id ? colorBrand : '')
+        const manualFontOffsetY = 11;
+        const padX = 12, padY = 12
         if (bgColor) {
             const prevFill = ctx.fillStyle
-            const padX = 12, padY = 8
+            const prevStroke = ctx.strokeStyle
+            const prevLineWidth = ctx.lineWidth
             ctx.fillStyle = bgColor
-            ctx.fillRect(offX - padX, offY - padY, w + padX * 2, h + padY * 2)
+            ctx.fillRect(offX-padX, offY-padY, w+padX*2, h+padY*2)
             ctx.fillStyle = prevFill
+            ctx.strokeStyle = prevStroke
+            ctx.lineWidth = prevLineWidth
         }
-        ctx.fillText(text, 0, 0)
-        ctx.strokeText(text, 0, 0)
+        ctx.fillText(text, 0, manualFontOffsetY)
         if (typeof selectedId !== 'undefined' && selectedId === tid) {
             ctx.save()
             ctx.strokeStyle = 'rgba(255,192,0,0.9)'
             ctx.lineWidth = 2
             ctx.setLineDash([8,4])
-            ctx.strokeRect(offX, offY, w, h)
+            ctx.strokeRect(offX-padX, offY-padY, w+padX*2, h+padY*2)
             ctx.restore()
         }
         ctx.restore()
@@ -652,6 +662,21 @@
         }
     }
 
+    const renderResultsList = function(){
+        if (!Array.isArray(resultsData)) { resultsData = [] }
+        var list = showAllResults ? resultsData : resultsData.slice(0, THUMBS_PAGE_SIZE)
+        if (typeof resultsListItems !== 'undefined') {
+            resultsListItems.innerHTML = list.map(function(r){
+                var dl = '<a class="btn" href="' + r.url + '" download>Download</a>'
+                var rs = r.json ? '<button class="btn" onclick="restoreResultSettings(\'' + r.json + '\')">Restore</button>' : ''
+                return '<span class="assetItem"><a href="' + r.url + '" target="_blank"><img src="' + r.thumb + '"></a>' + dl + ' ' + rs + '</span>'
+            }).join("")
+        }
+        if (typeof btnShowAllResults !== 'undefined') {
+            btnShowAllResults.style.display = (resultsData.length > THUMBS_PAGE_SIZE && !showAllResults) ? 'inline-flex' : 'none'
+        }
+    }
+
     const populateAssetLists = function () {
         fetch('./assets.php')
             .then(r => r.json())
@@ -668,6 +693,10 @@
                     generatedBackgroundsData = data.generatedBackgrounds
                     renderGeneratedBackgroundList()
                 }
+                if (Array.isArray(data.results)) {
+                    resultsData = data.results
+                    renderResultsList()
+                }
             })
             .catch(() => { /* ignore */ })
     }
@@ -683,6 +712,12 @@
         btnShowAllGeneratedBackgrounds.addEventListener('click', function(){
             showAllGeneratedBackgrounds = true
             renderGeneratedBackgroundList()
+        })
+    }
+    if (typeof btnShowAllResults !== 'undefined') {
+        btnShowAllResults.addEventListener('click', function(){
+            showAllResults = true
+            renderResultsList()
         })
     }
     
@@ -1477,6 +1512,26 @@
         createEl.download = fileName
         createEl.click()
         createEl.remove()
+
+        // Also persist result to backend (async, non-blocking)
+        try {
+            canvas.toBlob(function(blob){
+                if (!blob) return
+                const fd = new FormData()
+                fd.append('action', 'save_result')
+                fd.append('filename', fileName)
+                // Serialize current inputs as JSON
+                const params = collectCurrentParams()
+                const obj = {}
+                params.forEach((v, k) => { obj[k] = v })
+                fd.append('settings', JSON.stringify({ params: obj, ts: new Date().toISOString() }))
+                fd.append('image', blob, fileName)
+                fetch('./assets.php', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(() => { try { populateAssetLists() } catch(e){} })
+                    .catch(() => { /* ignore */ })
+            }, 'image/jpeg', 0.95)
+        } catch(e) { /* ignore */ }
     })
 
     // Deletion of generated assets (one-by-one)
@@ -1517,6 +1572,32 @@
                 })
                 .catch(() => alert('Delete failed'))
         } catch (e) { /* ignore */ }
+    }
+
+    // Restore a saved result's configuration
+    function restoreResultSettings(jsonUrl){
+        if (!jsonUrl) return
+        fetch(jsonUrl)
+            .then(r => r.json())
+            .then(data => {
+                try {
+                    const params = (data && data.settings && data.settings.params) ? data.settings.params : (data && data.params ? data.params : null)
+                    if (!params) return
+                    document.querySelectorAll('input').forEach(function(input){
+                        if (typeof params[input.id] === 'undefined') return
+                        if (input.type === 'file') {
+                            // ignore
+                        } else if (input.type === 'checkbox') {
+                            input.checked = String(params[input.id]) === 'true'
+                        } else {
+                            input.value = params[input.id]
+                        }
+                    })
+                    syncAllTransformNumbers()
+                    loadImagesAndRender()
+                } catch(e) { /* ignore */ }
+            })
+            .catch(() => { /* ignore */ })
     }
 
 </script>
