@@ -188,6 +188,20 @@
     var poseProcessedCanvas = null
     var secondProcessedCanvas = null
     var thirdProcessedCanvas = null
+    // Track current concrete targets used to load images (for per-image mask persistence)
+    var currentPoseTarget = ''
+    var currentSecondTarget = ''
+    var currentThirdTarget = ''
+
+    // Small utility: debounce
+    const debounce = function(fn, wait){
+        var t = null
+        return function(){
+            var ctx = this, args = arguments
+            if (t) { clearTimeout(t) }
+            t = setTimeout(function(){ fn.apply(ctx, args) }, wait)
+        }
+    }
 
     // Thumbnail pagination sizes
     const THUMBS_PAGE_SIZE = 5
@@ -417,6 +431,16 @@
 			return { id: e.id, src: finalUrl }
 		})
 
+		// Record current targets for mask persistence
+		currentPoseTarget = ''
+		currentSecondTarget = ''
+		currentThirdTarget = ''
+		for (var mi = 0; mi < mapped.length; mi++) {
+			if (mapped[mi].id === inputPose.id) { currentPoseTarget = mapped[mi].src }
+			if (mapped[mi].id === inputSecondURL.id) { currentSecondTarget = mapped[mi].src }
+			if (mapped[mi].id === inputThirdURL.id) { currentThirdTarget = mapped[mi].src }
+		}
+
 		return Promise.all(mapped.map(m => loadImage(m.src))).then(images => {
 			for (var i = 0; i < mapped.length; i++) {
 				const id = mapped[i].id
@@ -427,10 +451,15 @@
 				if (id === inputSecondURL.id) { imgSecond = im; continue }
 				if (id === inputThirdURL.id) { imgThird = im; continue }
 			}
-            updatePoseMask()
-            updateSecondMask()
-            updateThirdMask()
+			updatePoseMask()
+			updateSecondMask()
+			updateThirdMask()
 			render()
+
+			// Try restoring saved per-image mask settings (async); will re-render when applied
+			try { restoreMaskIfAvailable('pose') } catch(e){}
+			try { restoreMaskIfAvailable('second') } catch(e){}
+			try { restoreMaskIfAvailable('third') } catch(e){}
 		})
 	}
 
@@ -1266,18 +1295,86 @@
         thirdProcessedCanvas = off
     }
 
+    // --- Per-image mask persistence helpers ---
+    const isServerManagedTarget = function(t){
+        try {
+            t = String(t || '')
+            if (!t) return false
+            if (t.indexOf('img/poses/') === 0) return true
+            if (t.indexOf('img/gemini/') === 0) return true
+            if (t.indexOf('./image.php?') === 0 && t.indexOf('url=gemini%3A%2F%2F') > -1) return true
+            if (t.indexOf('image.php?') === 0 && t.indexOf('url=gemini%3A%2F%2F') > -1) return true
+            return false
+        } catch(e) { return false }
+    }
+
+    const restoreMaskIfAvailable = function(kind){
+        try {
+            var target = ''
+            var tolEl = null, softEl = null, colEl = null, updater = function(){}
+            if (kind === 'pose') { target = currentPoseTarget; tolEl = inputPoseTolerance; softEl = inputPoseSoftness; colEl = inputPoseKeyColor; updater = updatePoseMask }
+            else if (kind === 'second') { target = currentSecondTarget; tolEl = inputSecondTolerance; softEl = inputSecondSoftness; colEl = inputSecondKeyColor; updater = updateSecondMask }
+            else if (kind === 'third') { target = currentThirdTarget; tolEl = inputThirdTolerance; softEl = inputThirdSoftness; colEl = inputThirdKeyColor; updater = updateThirdMask }
+            if (!isServerManagedTarget(target)) return
+            fetch('./assets.php?action=get_mask&target=' + encodeURIComponent(target))
+                .then(function(r){ return r.ok ? r.json() : { exists:false } })
+                .then(function(d){
+                    if (!d || !d.exists || !d.settings) return
+                    try {
+                        if (tolEl && typeof d.settings.tolerance !== 'undefined') { tolEl.value = String(d.settings.tolerance) }
+                        if (softEl && typeof d.settings.softness !== 'undefined') { softEl.value = String(d.settings.softness) }
+                        if (colEl && typeof d.settings.keyColor === 'string' && d.settings.keyColor) {
+                            colEl.value = d.settings.keyColor
+                            colEl.dataset.sampled = '1'
+                        }
+                        updater(); render();
+                    } catch(e) { /* ignore */ }
+                })
+                .catch(function(){ /* ignore */ })
+        } catch(e) { /* ignore */ }
+    }
+
+    const saveMask = function(kind){
+        try {
+            var target = ''
+            var tolEl = null, softEl = null, colEl = null
+            if (kind === 'pose') { target = currentPoseTarget; tolEl = inputPoseTolerance; softEl = inputPoseSoftness; colEl = inputPoseKeyColor }
+            else if (kind === 'second') { target = currentSecondTarget; tolEl = inputSecondTolerance; softEl = inputSecondSoftness; colEl = inputSecondKeyColor }
+            else if (kind === 'third') { target = currentThirdTarget; tolEl = inputThirdTolerance; softEl = inputThirdSoftness; colEl = inputThirdKeyColor }
+            if (!isServerManagedTarget(target)) return
+            var t = parseInt((tolEl && tolEl.value) ? tolEl.value : '0', 10)
+            var s = parseInt((softEl && softEl.value) ? softEl.value : '0', 10)
+            var c = (colEl && colEl.value) ? String(colEl.value) : ''
+            var body = 'action=' + encodeURIComponent('save_mask') +
+                       '&target=' + encodeURIComponent(target) +
+                       '&settings=' + encodeURIComponent(JSON.stringify({ tolerance: t, softness: s, keyColor: c }))
+            fetch('./assets.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            }).catch(function(){ /* ignore */ })
+        } catch(e) { /* ignore */ }
+    }
+
+    var savePoseMaskDebounced = debounce(function(){ saveMask('pose') }, 250)
+    var saveSecondMaskDebounced = debounce(function(){ saveMask('second') }, 250)
+    var saveThirdMaskDebounced = debounce(function(){ saveMask('third') }, 250)
+
     // UI events for pose masking
     if (typeof chkPoseMask !== 'undefined') {
         chkPoseMask.addEventListener('change', function(){ updatePoseMask(); render(); })
     }
     if (typeof inputPoseKeyColor !== 'undefined') {
         inputPoseKeyColor.addEventListener('input', function(){ inputPoseKeyColor.dataset.sampled='1'; updatePoseMask(); render(); })
+        inputPoseKeyColor.addEventListener('input', function(){ savePoseMaskDebounced() })
     }
     if (typeof inputPoseTolerance !== 'undefined') {
         inputPoseTolerance.addEventListener('input', function(){ updatePoseMask(); render(); })
+        inputPoseTolerance.addEventListener('input', function(){ savePoseMaskDebounced() })
     }
     if (typeof inputPoseSoftness !== 'undefined') {
         inputPoseSoftness.addEventListener('input', function(){ updatePoseMask(); render(); })
+        inputPoseSoftness.addEventListener('input', function(){ savePoseMaskDebounced() })
     }
     if (typeof btnPoseSample !== 'undefined') {
         btnPoseSample.addEventListener('click', function(){
@@ -1287,6 +1384,7 @@
             inputPoseKeyColor.value = hex
             inputPoseKeyColor.dataset.sampled = '1'
             updatePoseMask(); render();
+            saveMask('pose')
         })
     }
 
@@ -1296,12 +1394,15 @@
     }
     if (typeof inputSecondKeyColor !== 'undefined') {
         inputSecondKeyColor.addEventListener('input', function(){ inputSecondKeyColor.dataset.sampled='1'; updateSecondMask(); render(); })
+        inputSecondKeyColor.addEventListener('input', function(){ saveSecondMaskDebounced() })
     }
     if (typeof inputSecondTolerance !== 'undefined') {
         inputSecondTolerance.addEventListener('input', function(){ updateSecondMask(); render(); })
+        inputSecondTolerance.addEventListener('input', function(){ saveSecondMaskDebounced() })
     }
     if (typeof inputSecondSoftness !== 'undefined') {
         inputSecondSoftness.addEventListener('input', function(){ updateSecondMask(); render(); })
+        inputSecondSoftness.addEventListener('input', function(){ saveSecondMaskDebounced() })
     }
     if (typeof btnSecondSample !== 'undefined') {
         btnSecondSample.addEventListener('click', function(){
@@ -1311,6 +1412,7 @@
             inputSecondKeyColor.value = hex
             inputSecondKeyColor.dataset.sampled = '1'
             updateSecondMask(); render();
+            saveMask('second')
         })
     }
 
@@ -1320,12 +1422,15 @@
     }
     if (typeof inputThirdKeyColor !== 'undefined') {
         inputThirdKeyColor.addEventListener('input', function(){ inputThirdKeyColor.dataset.sampled='1'; updateThirdMask(); render(); })
+        inputThirdKeyColor.addEventListener('input', function(){ saveThirdMaskDebounced() })
     }
     if (typeof inputThirdTolerance !== 'undefined') {
         inputThirdTolerance.addEventListener('input', function(){ updateThirdMask(); render(); })
+        inputThirdTolerance.addEventListener('input', function(){ saveThirdMaskDebounced() })
     }
     if (typeof inputThirdSoftness !== 'undefined') {
         inputThirdSoftness.addEventListener('input', function(){ updateThirdMask(); render(); })
+        inputThirdSoftness.addEventListener('input', function(){ saveThirdMaskDebounced() })
     }
     if (typeof btnThirdSample !== 'undefined') {
         btnThirdSample.addEventListener('click', function(){
@@ -1335,6 +1440,7 @@
             inputThirdKeyColor.value = hex
             inputThirdKeyColor.dataset.sampled = '1'
             updateThirdMask(); render();
+            saveMask('third')
         })
     }
 

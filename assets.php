@@ -9,6 +9,121 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 $root = __DIR__;
 
+// --- Helpers for per-image mask settings ---
+function clamp_int($v, $min = 0, $max = 255) {
+    $n = (int)$v;
+    if ($n < $min) $n = $min;
+    if ($n > $max) $n = $max;
+    return $n;
+}
+
+function is_valid_hex_color($s) {
+    return is_string($s) && preg_match('/^#[0-9a-fA-F]{6}$/', $s) === 1;
+}
+
+/**
+ * Resolve a target (local path or image.php gemini proxy URL) to a JSON path
+ * that sits next to the concrete image file on disk.
+ * Returns [absoluteJsonPath, existsBoolean] or [null, false] if unsupported.
+ */
+function resolve_mask_json_path($target, $root) {
+    $target = trim((string)$target);
+    if ($target === '') { return [null, false]; }
+
+    // Normalize relative ./image.php to image.php
+    if (strpos($target, './') === 0) { $target = substr($target, 2); }
+
+    // Case 1: Direct local paths under allowed roots
+    if (strpos($target, 'img/poses/') === 0 || strpos($target, 'img/gemini/') === 0) {
+        $abs = $root . '/' . str_replace('..', '', $target);
+        // Only allow png files
+        if (!preg_match('/\.png$/i', $abs)) { return [null, false]; }
+        $json = preg_replace('/\.[A-Za-z0-9]+$/', '.json', $abs);
+        return [$json, file_exists($json)];
+    }
+
+    // Case 2: image.php?url=gemini://... (possibly with kind=object or pose=...)
+    if (preg_match('#(?:^|/)image\.php\?#i', $target) === 1) {
+        // Extract query
+        $qpos = strpos($target, '?');
+        $query = ($qpos !== false) ? substr($target, $qpos + 1) : '';
+        $params = [];
+        parse_str($query, $params);
+        $url = isset($params['url']) ? (string)$params['url'] : '';
+        if (stripos($url, 'gemini://') !== 0) { return [null, false]; }
+
+        // Mirror hashing logic from image.php
+        $prompt = preg_replace('#^gemini://#i', '', $url);
+        $prompt = urldecode($prompt);
+        $poseUrl = isset($params['pose']) ? (string)$params['pose'] : '';
+        $poseData = isset($params['pose_data']) ? (string)$params['pose_data'] : '';
+        $isPoseGen = ($poseUrl !== '' || $poseData !== '');
+        $kind = isset($params['kind']) ? strtolower((string)$params['kind']) : '';
+
+        $assetDir = $root . '/img/gemini/backgrounds';
+        if ($isPoseGen) { $assetDir = $root . '/img/gemini/poses'; }
+        else if ($kind === 'object' || $kind === 'objects') { $assetDir = $root . '/img/gemini/objects'; }
+
+        // Build hash parts like image.php
+        $refKeys = ['ref_background', 'ref_pose', 'ref_second', 'ref_third'];
+        $hashParts = [$prompt, ($poseUrl ?: '')];
+        foreach ($refKeys as $rk) {
+            $v = isset($params[$rk]) ? (string)$params[$rk] : (isset($params[$rk . '_mime']) ? (string)$params[$rk . '_mime'] : '');
+            $d = isset($params[$rk . '_data']) ? (string)$params[$rk . '_data'] : '';
+            $hashParts[] = $v . '|' . $d;
+        }
+        $hashSource = implode('|', $hashParts);
+        $hash = sha1($hashSource);
+        $short = substr($hash, 0, 10);
+
+        // Find the cached PNG (slug is unknown, match by --<short>.png)
+        @mkdir($assetDir, 0777, true);
+        $matches = glob($assetDir . '/*--' . $short . '.png');
+        if ($matches && count($matches) > 0) {
+            $png = $matches[0];
+            $json = preg_replace('/\.[A-Za-z0-9]+$/', '.json', $png);
+            return [$json, file_exists($json)];
+        }
+        // Not found (not yet generated)
+        return [null, false];
+    }
+
+    // Unsupported/External
+    return [null, false];
+}
+
+// --- GET: get_mask (read per-image settings) ---
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = isset($_GET['action']) ? $_GET['action'] : '';
+    if ($action === 'get_mask') {
+        $target = isset($_GET['target']) ? $_GET['target'] : '';
+        list($jsonPath, $exists) = resolve_mask_json_path($target, $root);
+        if (!$jsonPath) {
+            echo json_encode([ 'exists' => false ]);
+            exit;
+        }
+        if ($exists) {
+            $raw = @file_get_contents($jsonPath);
+            $obj = json_decode((string)$raw, true);
+            $settings = null;
+            if (is_array($obj)) {
+                $t = isset($obj['tolerance']) ? clamp_int($obj['tolerance']) : null;
+                $s = isset($obj['softness']) ? clamp_int($obj['softness']) : null;
+                $c = isset($obj['keyColor']) && is_valid_hex_color($obj['keyColor']) ? $obj['keyColor'] : null;
+                $settings = [];
+                if ($t !== null) { $settings['tolerance'] = $t; }
+                if ($s !== null) { $settings['softness'] = $s; }
+                if ($c !== null) { $settings['keyColor'] = $c; }
+            }
+            echo json_encode([ 'exists' => true, 'settings' => $settings ]);
+            exit;
+        } else {
+            echo json_encode([ 'exists' => false ]);
+            exit;
+        }
+    }
+}
+
 // Handle POST actions (delete, save_result)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = isset($_POST['action']) ? $_POST['action'] : '';
@@ -148,6 +263,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'thumb' => to_web_path($finalThumb),
             'json' => to_web_path($finalJson)
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        exit;
+    } else if ($action === 'save_mask') {
+        // Persist per-image mask settings JSON next to the image
+        $target = isset($_POST['target']) ? $_POST['target'] : '';
+        $settingsStr = isset($_POST['settings']) ? $_POST['settings'] : '';
+        $settings = json_decode((string)$settingsStr, true);
+        if (!is_array($settings)) { echo json_encode(['success' => false, 'error' => 'invalid settings']); exit; }
+        list($jsonPath, $exists) = resolve_mask_json_path($target, $root);
+        if (!$jsonPath) { echo json_encode(['success' => false, 'error' => 'unsupported target']); exit; }
+        $tol = isset($settings['tolerance']) ? clamp_int($settings['tolerance']) : null;
+        $soft = isset($settings['softness']) ? clamp_int($settings['softness']) : null;
+        $col = isset($settings['keyColor']) && is_valid_hex_color($settings['keyColor']) ? $settings['keyColor'] : null;
+        $out = [];
+        if ($tol !== null) { $out['tolerance'] = $tol; }
+        if ($soft !== null) { $out['softness'] = $soft; }
+        if ($col !== null) { $out['keyColor'] = $col; }
+        $out['updatedAt'] = gmdate('c');
+        @mkdir(dirname($jsonPath), 0777, true);
+        $ok = (@file_put_contents($jsonPath, json_encode($out, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false);
+        echo json_encode(['success' => $ok]);
         exit;
     }
 }
