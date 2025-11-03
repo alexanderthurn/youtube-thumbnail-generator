@@ -244,14 +244,16 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 /* Canvas color swatches */
 .color-swatches {
 	display: inline-flex;
-	gap: 6px;
-	margin-left: var(--space-4);
+	gap: 2px;
+	margin-left: var(--space-2);
 	vertical-align: middle;
+	flex-wrap: wrap;
+	max-width: 100%;
 }
 .swatch {
-	width: 28px;
-	height: 28px;
-	border-radius: 50%;
+	width: 18px;
+	height: 18px;
+	border-radius: 2px;
 	border: 1px solid rgba(0,0,0,0.2);
 	padding: 0;
 	cursor: pointer;
@@ -263,3 +265,13 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 	box-shadow: 0 2px 6px rgba(0,0,0,0.18), inset 0 0 0 1px rgba(255,255,255,0.5);
 	transition: transform 160ms ease, box-shadow 160ms ease;
 }
+
+/* Canvas color row: allow wrapping to avoid horizontal scroll */
+#card-canvascolor .ui-level-0 {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	flex-wrap: wrap;
+}
+#card-canvascolor input[type="color"] { flex: 0 0 auto; }
+#card-canvascolor .color-swatches { flex-wrap: wrap; }
