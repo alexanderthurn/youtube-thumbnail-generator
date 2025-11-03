@@ -19,7 +19,7 @@
             background-color: green;
         }
 
-        .assetItem { position: relative; display: inline-block; margin: 2px; }
+        .assetItem { position: relative; display: inline-block; margin: 2px; vertical-align: top; }
         .assetItem img { display: block; }
         .deleteBtn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; }
         .selectedControl { background: transparent; outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -53,7 +53,7 @@
 
     <section class="panel glass" id="card-pose">
         <div class="ui-level-0">Pose: <input id="inputPose" step="1" type="number" min="0" max="30" data-force-imageload /><button
-                title="chaos" onclick="inputPoseURL.value=''; if (typeof inputPoseKeyColor!=='undefined'){ inputPoseKeyColor.dataset.sampled=''; } randomizeInputByMinMax(inputPose, true); loadImagesAndRender()">c</button><span
+                class="icon-btn" title="Randomize pose" aria-label="Randomize pose" onclick="inputPoseURL.value=''; if (typeof inputPoseKeyColor!=='undefined'){ inputPoseKeyColor.dataset.sampled=''; } randomizeInputByMinMax(inputPose, true); loadImagesAndRender()">🎲</button><span
                 id="spanPoses"></span><span id="spanPosesPosition" class="ui-level-1"></span><button id="btnPromptPose" class="ui-level-0" title="Generate with prompt">AI</button><span id="spanPromptPose" class="ui-level-1" style="display:none;">
                 <div class="prompt-label">Gemini AI</div>
                 <textarea id="inputPromptPose" rows="5" class="prompt-textarea" placeholder="Describe pose edit...">Using the provided image of a man in a suit, give him a magic hat. Ensure the man's face and features remain completely unchanged. The background has to be #ff00ff.</textarea>
@@ -69,19 +69,19 @@
     </section>
 
     <section class="panel glass ui-level-1" id="card-second">
-        <div class="ui-level-1"><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">SecondImage</a>: <input
+        <div class="ui-level-1"><a href="https://library.techsmith.com/en/camtasia/assets/Graphic/Photo">Image1</a>: <input
                 id="inputSecondURL" type="text" size="10" data-force-imageload><input type="file"
                 data-image-target="inputSecondURL" /><span id="spanSecondPosition"></span><button id="btnPromptSecond" title="Generate with prompt">AI</button><span id="spanPromptSecond" style="display:none;">
                 <div class="prompt-label">Gemini AI</div>
-                <textarea id="inputPromptSecond" rows="4" class="prompt-textarea" placeholder="Describe second image..."></textarea>
+                <textarea id="inputPromptSecond" rows="4" class="prompt-textarea" placeholder="Describe second image...">A cute panda. The background has to be #ff00ff.</textarea>
                 <button id="btnGenerateSecond" title="Generate second image">Generate</button> <label title="Apply chroma key to SecondImage"><input id="chkSecondMask" type="checkbox" checked> Mask</label> <button id="btnSecondSample" title="Sample key color from borders of SecondImage">Sample</button> Color: <input id="inputSecondKeyColor" type="color" value="#ff00ff"> Tolerance: <input id="inputSecondTolerance" type="range" min="-1" max="255" value="0"> <br>Softness: <input id="inputSecondSoftness" type="range" min="-1" max="255" value="0"></span></div>
     </section>
 
     <section class="panel glass ui-level-1" id="card-third">
-        <div class="ui-level-1">ThirdImage: <input id="inputThirdURL" type="text" size="10" data-force-imageload><input type="file"
+        <div class="ui-level-1">Image2: <input id="inputThirdURL" type="text" size="10" data-force-imageload><input type="file"
                 data-image-target="inputThirdURL" /><span id="spanThirdPosition"></span><button id="btnPromptThird" title="Generate with prompt">AI</button><span id="spanPromptThird" style="display:none;">
                 <div class="prompt-label">Gemini AI</div>
-                <textarea id="inputPromptThird" rows="4" class="prompt-textarea" placeholder="Describe third image..."></textarea>
+                <textarea id="inputPromptThird" rows="4" class="prompt-textarea" placeholder="Describe third image...">A mighty eagle.The background has to be #ff00ff.</textarea>
                 <button id="btnGenerateThird" title="Generate third image">Generate</button> <label title="Apply chroma key to ThirdImage"><input id="chkThirdMask" type="checkbox" checked> Mask</label> <button id="btnThirdSample" title="Sample key color from borders of ThirdImage">Sample</button> Color: <input id="inputThirdKeyColor" type="color" value="#ff00ff"> Tolerance: <input id="inputThirdTolerance" type="range" min="-1" max="255" value="0"> <br>Softness: <input id="inputThirdSoftness" type="range" min="-1" max="255" value="0"></span></div>
     </section>
 
@@ -129,20 +129,27 @@
         </div>
     </section>
 
+    <div id="listsTabs" class="ui-level-1" style="margin: 8px 0 4px 0;">
+        <div class="thumbs-header">
+            <div style="display:inline-block; margin-left: 0;">
+                <button id="tabPoses" class="btn">Poses</button>
+                <button id="tabAiPoses" class="btn">AI Poses</button>
+                <button id="tabAiBackgrounds" class="btn">AI Backgrounds</button>
+                <button id="tabHistory" class="btn">History</button>
+            </div>
+        </div>
+    </div>
+
     <div id="poseList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">Poses</span></div>
         <div id="poseListItems"></div>
     </div>
-    <div id="generatedPoseList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">AI Poses</span> <button id="btnShowAllGeneratedPoses" class="btn">Show all</button></div>
+    <div id="generatedPoseList" class="ui-level-1" style="display:none;">
         <div id="generatedPoseListItems"></div>
     </div>
-    <div id="generatedBackgroundList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">AI Backgrounds</span> <button id="btnShowAllGeneratedBackgrounds" class="btn">Show all</button></div>
+    <div id="generatedBackgroundList" class="ui-level-1" style="display:none;">
         <div id="generatedBackgroundListItems"></div>
     </div>
-    <div id="resultsList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">History</span> <button id="btnShowAllResults" class="btn">Show all</button></div>
+    <div id="resultsList" class="ui-level-1" style="display:none;">
         <div id="resultsListItems"></div>
     </div>
     </main>
@@ -176,8 +183,9 @@
     var secondProcessedCanvas = null
     var thirdProcessedCanvas = null
 
-    // Thumbnail pagination size (change here to adjust page size)
+    // Thumbnail pagination sizes
     const THUMBS_PAGE_SIZE = 5
+    const POSES_PAGE_SIZE = 10
 
     // Asset list state
     var normalPosesData = []
@@ -673,7 +681,7 @@
 <input class=\"ui-level-2\" id="tfn_${id}_r" type="number" min="-360" max="360" value="0" step="1" title="rotation" oninput="eId('tf_${id}_r').value=this.value; render()"/>
 <input class="ui-level-2" title="mirror horizontal" type="checkbox" id="tf_${id}_h"/>
 <input class="ui-level-2" title="mirror vertical" type="checkbox" id="tf_${id}_v"/>
-<button class="ui-level-2" title="chaos" onclick="randomizeTransform('${id}')">c</button>
+<button class="ui-level-2 icon-btn" title="Randomize transform" aria-label="Randomize transform" onclick="randomizeTransform('${id}')">🎲</button>
 <button class="ui-level-2" title="reset" onclick="resetTransform('${id}')">r</button>`
     }
 
@@ -733,14 +741,15 @@
 
     const renderGeneratedPoseList = function(){
         if (!Array.isArray(generatedPosesData)) { generatedPosesData = [] }
-        var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, THUMBS_PAGE_SIZE)
+        var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, POSES_PAGE_SIZE)
         if (typeof generatedPoseListItems !== 'undefined') {
-            generatedPoseListItems.innerHTML = list.map(function(g){
+            var html = list.map(function(g){
                 return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "'; if (typeof chkPoseMask!=='undefined'){ chkPoseMask.checked=true; } inputPoseTolerance.value=69; inputPoseSoftness.value=69; inputPoseKeyColor.dataset.sampled=''; loadImagesAndRender(); flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
             }).join("")
-        }
-        if (typeof btnShowAllGeneratedPoses !== 'undefined') {
-            btnShowAllGeneratedPoses.style.display = (generatedPosesData.length > THUMBS_PAGE_SIZE && !showAllGeneratedPoses) ? 'inline-flex' : 'none'
+            if (!showAllGeneratedPoses && generatedPosesData.length > POSES_PAGE_SIZE) {
+                html += "<span class=\"assetItem\"><button class=\"show-all-tile\" onclick=\"showAllGeneratedPoses=true; renderGeneratedPoseList()\">＋ Show all</button></span>"
+            }
+            generatedPoseListItems.innerHTML = html
         }
     }
 
@@ -748,12 +757,13 @@
         if (!Array.isArray(generatedBackgroundsData)) { generatedBackgroundsData = [] }
         var list = showAllGeneratedBackgrounds ? generatedBackgroundsData : generatedBackgroundsData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedBackgroundListItems !== 'undefined') {
-            generatedBackgroundListItems.innerHTML = list.map(function(g){
+            var html = list.map(function(g){
                 return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputBackgroundURL.value='" + g.url + "';loadImagesAndRender();flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete background\" onclick=\"deleteGeneratedAsset(event,'background','" + g.url + "')\">×</button></span>"
             }).join("")
-        }
-        if (typeof btnShowAllGeneratedBackgrounds !== 'undefined') {
-            btnShowAllGeneratedBackgrounds.style.display = (generatedBackgroundsData.length > THUMBS_PAGE_SIZE && !showAllGeneratedBackgrounds) ? 'inline-flex' : 'none'
+            if (!showAllGeneratedBackgrounds && generatedBackgroundsData.length > THUMBS_PAGE_SIZE) {
+                html += "<span class=\"assetItem\"><button class=\"show-all-tile\" onclick=\"showAllGeneratedBackgrounds=true; renderGeneratedBackgroundList()\">＋ Show all</button></span>"
+            }
+            generatedBackgroundListItems.innerHTML = html
         }
     }
 
@@ -761,14 +771,15 @@
         if (!Array.isArray(resultsData)) { resultsData = [] }
         var list = showAllResults ? resultsData : resultsData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof resultsListItems !== 'undefined') {
-            resultsListItems.innerHTML = list.map(function(r){
+            var html = list.map(function(r){
                 var dl = '<a class="btn" href="' + r.url + '" download>Download</a>'
                 var rs = r.json ? '<button class="btn" onclick="restoreResultSettings(\'' + r.json + '\')">Restore</button>' : ''
                 return '<span class="assetItem"><a href="' + r.url + '" target="_blank"><img onclick="flashThumb(this)" src="' + r.thumb + '"></a>' + dl + ' ' + rs + '<button class="deleteBtn" title="Delete result" onclick="deleteGeneratedAsset(event,\'result\',\'' + r.url + '\')">×</button></span>'
             }).join("")
-        }
-        if (typeof btnShowAllResults !== 'undefined') {
-            btnShowAllResults.style.display = (resultsData.length > THUMBS_PAGE_SIZE && !showAllResults) ? 'inline-flex' : 'none'
+            if (!showAllResults && resultsData.length > THUMBS_PAGE_SIZE) {
+                html += "<span class=\"assetItem\"><button class=\"show-all-tile\" onclick=\"showAllResults=true; renderResultsList()\">＋ Show all</button></span>"
+            }
+            resultsListItems.innerHTML = html
         }
     }
 
@@ -818,6 +829,41 @@
     
 
 
+
+    // --- Tabs for lists ---
+    const TAB_IDS = {
+        poses: 'poseList',
+        aiPoses: 'generatedPoseList',
+        aiBackgrounds: 'generatedBackgroundList',
+        history: 'resultsList'
+    }
+    const TAB_BUTTONS = {
+        poses: 'tabPoses',
+        aiPoses: 'tabAiPoses',
+        aiBackgrounds: 'tabAiBackgrounds',
+        history: 'tabHistory'
+    }
+    const setActiveTab = function(name){
+        const keys = Object.keys(TAB_IDS)
+        keys.forEach(function(k){
+            const el = eId(TAB_IDS[k])
+            if (el) { el.style.display = (k === name ? '' : 'none') }
+            const btn = eId(TAB_BUTTONS[k])
+            if (btn) { btn.classList.toggle('btn--primary', k === name) }
+        })
+        try { localStorage.setItem('activeListTab', name) } catch(e) { }
+    }
+    const initTabs = function(){
+        const keys = Object.keys(TAB_BUTTONS)
+        keys.forEach(function(k){
+            const btn = eId(TAB_BUTTONS[k])
+            if (btn) { btn.addEventListener('click', function(){ setActiveTab(k) }) }
+        })
+        let def = 'poses'
+        try { def = localStorage.getItem('activeListTab') || 'poses' } catch(e) { def = 'poses' }
+        setActiveTab(def)
+    }
+    initTabs()
 
     // Toggle visibility of prompt inputs for Background and SecondImage
     btnPromptBackground.addEventListener('click', function () {
