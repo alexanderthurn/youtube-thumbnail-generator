@@ -240,3 +240,7 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 }
 
 
+/* Results */
+#resultsListItems .assetItem { width: 192px; }
+#resultsListItems .assetItem img { width: 100%; height: auto; }
+
