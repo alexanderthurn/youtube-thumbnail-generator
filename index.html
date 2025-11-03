@@ -30,10 +30,11 @@
 <body>
     <header class="topbar">
         <div class="topbar__left">
-            <img class="topbar__logo" src="img/logo.svg" alt="Werteherren" />
+            <img class="topbar__logo" src="img/favicon_small.png" alt="Werteherren" />
+            <span class="topbar__title">Free Youtube Thumbnail Generator</span>
         </div>
         <div class="topbar__right">
-            <span class="topbar__title">Free Youtube Thumbnail Generator</span>
+            
         </div>
     </header>
     <main class="layout">
@@ -588,19 +589,19 @@
     }
 
     const addTransformMenu = function (id, menuElement) {
-        menuElement.innerHTML = `<br>x/y/s/r/m: 
-<input id="tf_${id}_x" type="range" min="-1960" max="2280" value="0" title="x" oninput="eId('tfn_${id}_x').value=this.value; render()"/>
+        menuElement.innerHTML = `<br class="ui-level-2"><span class="ui-level-2">x/y/s/r/m: </span>
+<input class="ui-level-2" id="tf_${id}_x" type="range" min="-1960" max="2280" value="0" title="x" oninput="eId('tfn_${id}_x').value=this.value; render()"/>
 <input class=\"ui-level-2\" id="tfn_${id}_x" type="number" min="-1960" max="2280" value="0" step="1" title="x" oninput="eId('tf_${id}_x').value=this.value; render()"/>
-<input id="tf_${id}_y" type="range" min="-2280" max="1640" value="0" title="y" oninput="eId('tfn_${id}_y').value=this.value; render()"/>
+<input class="ui-level-2" id="tf_${id}_y" type="range" min="-2280" max="1640" value="0" title="y" oninput="eId('tfn_${id}_y').value=this.value; render()"/>
 <input class=\"ui-level-2\" id="tfn_${id}_y" type="number" min="-2280" max="1640" value="0" step="1" title="y" oninput="eId('tf_${id}_y').value=this.value; render()"/>
-<input id="tf_${id}_s" type="range" min="-1000" max="1000" value="100" data-random-min="50" data-random-max="250" title="scale" oninput="eId('tfn_${id}_s').value=this.value; render()"/>
+<input class="ui-level-2" id="tf_${id}_s" type="range" min="-1000" max="1000" value="100" data-random-min="50" data-random-max="250" title="scale" oninput="eId('tfn_${id}_s').value=this.value; render()"/>
 <input class=\"ui-level-2\" id="tfn_${id}_s" type="number" min="-1000" max="1000" value="100" step="1" title="scale" oninput="eId('tf_${id}_s').value=this.value; render()"/>
-<input id="tf_${id}_r" type="range" min="-360" max="360" value="0" title="rotation" oninput="eId('tfn_${id}_r').value=this.value; render()"/>
+<input class="ui-level-2" id="tf_${id}_r" type="range" min="-360" max="360" value="0" title="rotation" oninput="eId('tfn_${id}_r').value=this.value; render()"/>
 <input class=\"ui-level-2\" id="tfn_${id}_r" type="number" min="-360" max="360" value="0" step="1" title="rotation" oninput="eId('tf_${id}_r').value=this.value; render()"/>
-<input title="mirror horizontal" type="checkbox" id="tf_${id}_h"/>
-<input title="mirror vertical" type="checkbox" id="tf_${id}_v"/>
-<button title="chaos" onclick="randomizeTransform('${id}')">c</button>
-<button title="reset" onclick="resetTransform('${id}')">r</button>`
+<input class="ui-level-2" title="mirror horizontal" type="checkbox" id="tf_${id}_h"/>
+<input class="ui-level-2" title="mirror vertical" type="checkbox" id="tf_${id}_v"/>
+<button class="ui-level-1" title="chaos" onclick="randomizeTransform('${id}')">c</button>
+<button class="ui-level-1" title="reset" onclick="resetTransform('${id}')">r</button>`
     }
 
     addTransformMenu(inputPose.id, spanPosesPosition)
@@ -662,7 +663,7 @@
         var list = showAllGeneratedPoses ? generatedPosesData : generatedPosesData.slice(0, THUMBS_PAGE_SIZE)
         if (typeof generatedPoseListItems !== 'undefined') {
             generatedPoseListItems.innerHTML = list.map(function(g){
-                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "'; if (typeof chkPoseMask!=='undefined'){ chkPoseMask.checked=true; } inputPoseTolerance.value=20; inputPoseSoftness.value=20; inputPoseKeyColor.dataset.sampled=''; loadImagesAndRender(); flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
+                return "<span class=\"assetItem\"><img class=\"thumb\" title=\"" + escapeHtml(g.prompt) + "\" onclick=\"inputPoseURL.value='" + g.url + "'; if (typeof chkPoseMask!=='undefined'){ chkPoseMask.checked=true; } inputPoseTolerance.value=69; inputPoseSoftness.value=69; inputPoseKeyColor.dataset.sampled=''; loadImagesAndRender(); flashThumb(this)\" src=\"" + g.thumb + "\"><button class=\"deleteBtn\" title=\"Delete pose\" onclick=\"deleteGeneratedAsset(event,'pose','" + g.url + "')\">×</button></span>"
             }).join("")
         }
         if (typeof btnShowAllGeneratedPoses !== 'undefined') {
@@ -1529,9 +1530,55 @@
         hideTextEditor(); render()
     }
     const cancelTextEdit = function(){ hideTextEditor() }
+    // Helpers: cycle Pose and Background on double-click
+    const cyclePose = function(){
+        try {
+            const isAi = !!(inputPoseURL && inputPoseURL.value)
+            if (isAi && Array.isArray(generatedPosesData) && generatedPosesData.length > 0) {
+                const cur = String(inputPoseURL.value || '')
+                let idx = -1
+                for (let i=0;i<generatedPosesData.length;i++){
+                    const u = String(generatedPosesData[i].url || '')
+                    if (!u) continue
+                    if (cur.indexOf(u) > -1 || cur.endsWith('/' + u.split('/').pop())) { idx = i; break }
+                }
+                const next = (idx >= 0) ? ((idx + 1) % generatedPosesData.length) : 0
+                if (typeof chkPoseMask !== 'undefined') { chkPoseMask.checked = true }
+                if (typeof inputPoseTolerance !== 'undefined') { inputPoseTolerance.value = 69 }
+                if (typeof inputPoseSoftness !== 'undefined') { inputPoseSoftness.value = 69 }
+                if (typeof inputPoseKeyColor !== 'undefined') { inputPoseKeyColor.dataset.sampled = '' }
+                inputPoseURL.value = generatedPosesData[next].url
+                suspendPoseGeminiOnce = true
+                loadImagesAndRender().then(function(){ suspendPoseGeminiOnce = false }).catch(function(){ suspendPoseGeminiOnce = false })
+            } else {
+                const count = (Array.isArray(normalPosesData) && normalPosesData.length > 0) ? normalPosesData.length : (parseInt(inputPose.max,10) + 1 || posesCount)
+                const curIdx = parseInt(inputPose.value || '0', 10) || 0
+                const nextIdx = (curIdx + 1) % Math.max(1, count)
+                inputPose.value = nextIdx
+                if (inputPoseURL) { inputPoseURL.value = '' }
+                loadImagesAndRender()
+            }
+        } catch(e) { /* ignore */ }
+    }
+    const cycleBackground = function(){
+        try {
+            if (!Array.isArray(generatedBackgroundsData) || generatedBackgroundsData.length === 0) return
+            const cur = String((inputBackgroundURL && inputBackgroundURL.value) || '')
+            let idx = -1
+            for (let i=0;i<generatedBackgroundsData.length;i++){
+                const u = String(generatedBackgroundsData[i].url || '')
+                if (!u) continue
+                if (cur.indexOf(u) > -1 || cur.endsWith('/' + u.split('/').pop())) { idx = i; break }
+            }
+            const next = (idx >= 0) ? ((idx + 1) % generatedBackgroundsData.length) : 0
+            inputBackgroundURL.value = generatedBackgroundsData[next].url
+            loadImagesAndRender()
+        } catch(e) { /* ignore */ }
+    }
     canvas.addEventListener('dblclick', function(e){
         const p = getCanvasXY(e)
         const layers = getLayersFrontToBack()
+        // Text editing takes precedence
         for (let i = 0; i < layers.length; i++) {
             const d = layers[i]
             if (d.kind === 'text' && isHit(p.x, p.y, d)) {
@@ -1540,6 +1587,24 @@
                 e.preventDefault()
                 return
             }
+        }
+        // Otherwise, hit-test topmost and cycle pose/background
+        for (let i = 0; i < layers.length; i++) {
+            const d = layers[i]
+            if (!isHit(p.x, p.y, d)) continue
+            if (d.id === inputPose.id) {
+                setSelected(d.id)
+                cyclePose()
+                e.preventDefault()
+                return
+            }
+            if (d.id === inputBackgroundURL.id) {
+                setSelected(d.id)
+                cycleBackground()
+                e.preventDefault()
+                return
+            }
+            break
         }
     })
     // Hover cursor hint when over text

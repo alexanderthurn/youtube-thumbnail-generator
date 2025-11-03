@@ -164,6 +164,7 @@ Notes:
 - Outputs are PNG with alpha preserved.
 - After reviewing results in `<OUTDIR>_uniform`, you can copy them into `img/poses/`.
 - Thumbnails in `img/poses_thumbs/` are not created by this script.
+- Favicon generated with https://www.icoconverter.com/
 
 ## License
 MIT License
