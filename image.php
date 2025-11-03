@@ -100,6 +100,25 @@ function output_error_image($message, $statusCode = 500) {
     exit;
 }
 
+/** Read parameter from POST first, then GET */
+function get_param($key, $default = null) {
+    if (isset($_POST[$key]) && $_POST[$key] !== '') { return $_POST[$key]; }
+    if (isset($_GET[$key])) { return $_GET[$key]; }
+    return $default;
+}
+
+/** Parse data URI: data:mime;base64,.... → [bytes, mime] */
+function parse_data_uri($str) {
+    if (!is_string($str)) return [null, null];
+    if (preg_match('#^data:([^;,]+);base64,(.+)$#is', $str, $m)) {
+        $mime = trim($m[1]);
+        $b64 = trim($m[2]);
+        $bin = base64_decode($b64, true);
+        if ($bin !== false) { return [$bin, ($mime ?: 'image/png')]; }
+    }
+    return [null, null];
+}
+
 /**
  * Fetch bytes and detected mime type from a source that can be:
  * - http(s) URL
@@ -186,10 +205,10 @@ function fetch_bytes_and_mime($url, $defaultMime = 'image/png') {
 }
 
 # --- Eingabe prüfen: https?:// (Proxy) ODER gemini://<prompt> (Generierung) ---
-if (!isset($_GET['url'])) {
+$rawUrl = get_param('url', '');
+if (!is_string($rawUrl) || $rawUrl === '') {
     output_error_image('Missing required parameter: url', 400);
 }
-$rawUrl = $_GET['url'];
 $isHttps = (preg_match('#^https?://#i', $rawUrl) === 1);
 $isGemini = (preg_match('#^gemini://#i', $rawUrl) === 1);
 
@@ -227,7 +246,7 @@ if ($isGemini) {
     $prompt = urldecode($prompt);
 
     # Optional: Pose-Bild laden (lokale Datei oder entfernte URL) und Base64 enkodieren (nur für Pose-Generierung)
-    $poseUrl = isset($_GET['pose']) ? trim($_GET['pose']) : '';
+    $poseUrl = trim((string)get_param('pose', ''));
     $poseB64 = null;
     $poseMime = 'image/png';
     if ($poseUrl !== '') {
@@ -242,11 +261,25 @@ if ($isGemini) {
     $refKeys = ['ref_background', 'ref_pose', 'ref_second', 'ref_third'];
     $refInlineParts = [];
     foreach ($refKeys as $rk) {
-        $val = isset($_GET[$rk]) ? trim($_GET[$rk]) : '';
-        if ($val === '') { continue; }
-        list($bytes, $mime) = fetch_bytes_and_mime($val, 'image/png');
+        $val = trim((string)get_param($rk, ''));
+        $dataParam = get_param($rk . '_data', '');
+        $mimeParam = trim((string)get_param($rk . '_mime', ''));
+
+        $bytes = null; $mime = 'image/png';
+        if (is_string($dataParam) && $dataParam !== '') {
+            // Raw base64 provided via *_data (no data: prefix)
+            $bytes = base64_decode($dataParam, true);
+            if ($bytes === false) { $bytes = null; }
+            $mime = $mimeParam ?: 'image/png';
+        } else if ($val !== '') {
+            // data: URI support
+            if (stripos($val, 'data:') === 0) {
+                list($bytes, $mime) = parse_data_uri($val);
+            } else {
+                list($bytes, $mime) = fetch_bytes_and_mime($val, 'image/png');
+            }
+        }
         if ($bytes !== null && $bytes !== false) {
-            // Only pass through image/* content; if HTML (e.g., a 404), fail fast with a clear message
             if (!preg_match('#^image/#i', (string)$mime)) {
                 output_error_image('Reference "' . $rk . '" is not an image (Content-Type: ' . (string)$mime . '). Check base path and URLs.', 400);
             }
@@ -268,7 +301,7 @@ if ($isGemini) {
     ensure_dir($thumbDir);
 
     $hashParts = [$prompt, ($poseUrl ?: '')];
-    foreach ($refKeys as $rk) { $hashParts[] = isset($_GET[$rk]) ? $_GET[$rk] : ''; }
+    foreach ($refKeys as $rk) { $hashParts[] = (string)get_param($rk, (string)get_param($rk . '_mime', '')) . '|' . (string)get_param($rk . '_data', ''); }
     $hashSource = implode('|', $hashParts);
     $hash = sha1($hashSource);
     $short = substr($hash, 0, 10);
