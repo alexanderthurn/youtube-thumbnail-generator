@@ -108,7 +108,7 @@
             <label class="ui-level-2"><input type="checkbox" id="toggleReducedMotion"> Reduced motion</label>
             <div style="margin-top:6px;">
                 <label for="inputGeminiKey" title="Used if no .env key is present">Gemini key:</label>
-                <input id="inputGeminiKey" type="password" placeholder="Enter Gemini API key" autocomplete="off" style="width: 100%; max-width: 320px;">
+                <input id="inputGeminiKey" name="no-autofill-gemini" type="password" placeholder="Enter Gemini API key" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="width: 100%; max-width: 320px;" readonly>
                 <div style="margin-top:4px; font-size: 12px; opacity: 0.9;">
                     No key yet? <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener">Create one at Google AI Studio</a>
                 </div>
@@ -306,7 +306,18 @@
     if (typeof inputGeminiKey !== 'undefined') {
         try {
             var storedKey = getGeminiKey()
-            if (storedKey) { inputGeminiKey.value = storedKey }
+            if (storedKey) {
+                inputGeminiKey.value = storedKey
+                try { inputGeminiKey.removeAttribute('readonly') } catch(e) { /* ignore */ }
+            } else {
+                // Prevent password managers from autofilling when empty
+                inputGeminiKey.value = ''
+                // Remove readonly on user interaction only
+                const unlock = function(){ try { inputGeminiKey.removeAttribute('readonly') } catch(e) { /* ignore */ } }
+                inputGeminiKey.addEventListener('focus', unlock, { once: true })
+                inputGeminiKey.addEventListener('mousedown', unlock, { once: true })
+                inputGeminiKey.addEventListener('touchstart', unlock, { once: true })
+            }
         } catch(e) { /* ignore */ }
         inputGeminiKey.addEventListener('input', function(){ setGeminiKey(this.value) })
     }
