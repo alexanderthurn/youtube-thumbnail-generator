@@ -17,29 +17,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $file = isset($_POST['file']) ? $_POST['file'] : '';
 
         // Only allow specific types
-        if ($type !== 'pose' && $type !== 'background') {
+        if (!in_array($type, ['pose', 'background', 'result'], true)) {
             echo json_encode(['success' => false, 'error' => 'Invalid type']);
             exit;
         }
 
-        // Only allow safe basenames within gemini folders
+        // Only allow safe basenames within expected folders
         $basename = basename($file);
-        if (!preg_match('/^[A-Za-z0-9._-]+\.png$/', $basename)) {
-            echo json_encode(['success' => false, 'error' => 'Invalid filename']);
-            exit;
+        if ($type === 'result') {
+            if (!preg_match('/^[A-Za-z0-9._-]+\.(png|jpg|jpeg)$/i', $basename)) {
+                echo json_encode(['success' => false, 'error' => 'Invalid filename']);
+                exit;
+            }
+        } else {
+            if (!preg_match('/^[A-Za-z0-9._-]+\.png$/i', $basename)) {
+                echo json_encode(['success' => false, 'error' => 'Invalid filename']);
+                exit;
+            }
         }
 
         if ($type === 'pose') {
             $original = $root . '/img/gemini/poses/' . $basename;
             $thumb = $root . '/img/gemini/poses_thumbs/' . $basename;
-        } else {
+            $json = null;
+        } else if ($type === 'background') {
             $original = $root . '/img/gemini/backgrounds/' . $basename;
             $thumb = $root . '/img/gemini/backgrounds_thumbs/' . $basename;
+            $json = null;
+        } else { // result
+            $original = $root . '/img/results/' . $basename;
+            $thumb = $root . '/img/results_thumbs/' . $basename;
+            $baseNoExt = preg_replace('/\.[A-Za-z0-9]+$/', '', $basename);
+            $json = $root . '/img/results/' . $baseNoExt . '.json';
         }
 
         $ok = true;
         // Attempt to delete, ignoring if missing
-        foreach ([$original, $thumb] as $p) {
+        $paths = [$original, $thumb];
+        if (!empty($json)) { $paths[] = $json; }
+        foreach ($paths as $p) {
             if (file_exists($p)) {
                 if (!@unlink($p)) { $ok = false; }
             }

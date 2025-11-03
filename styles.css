@@ -3,9 +3,9 @@
 	--bg: #fff;
 	--text: #000;
 	--topbar: #000;
-	--glass-bg: rgba(255, 255, 255, 0.65);
-	--glass-border: rgba(0, 0, 0, 0.12);
-	--glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+	--glass-bg: rgba(255, 255, 255, 0.80);
+	--glass-border: rgba(0, 0, 0, 0.5);
+	--glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
 	--radius-md: 0px;
 	--radius-lg: 0px;
 	--space-1: 4px;
@@ -100,6 +100,12 @@ html, body {
 	border-radius: var(--radius-lg);
 }
 
+/* Stronger visual separation for panels */
+.panel {
+	border: 1px solid var(--glass-border);
+	box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+}
+
 .panel { padding: 16px; }
 .panel + .panel { margin-top: 0; }
 
@@ -135,7 +141,7 @@ html, body {
 		grid-row: 1;
 		position: fixed;
 		right: 24px; /* matches .layout horizontal padding */
-		top: 56px;   /* below sticky topbar; adjust if your header height changes */
+		top: 84.5px;   /* below sticky topbar; adjusted for larger header */
 		width: 360px;
 		max-height: calc(100vh - 56px);
 		overflow: auto;
@@ -235,7 +241,7 @@ body[data-reduced-motion="1"] *, body[data-reduced-motion="1"] *::before, body[d
 }
 
 #generatedBackgroundListItems img {
-	width: 160px;
+	width: 256px;
 	height: auto;
 }
 

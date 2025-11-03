@@ -21,9 +21,9 @@
         .assetItem { position: relative; display: inline-block; margin: 2px; }
         .assetItem img { display: block; }
         .deleteBtn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 0px; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px; }
-        .selectedControl { background: rgba(255, 192, 0, 0.18); outline: 2px solid rgb(255, 192, 0); outline-offset: 2px; }
-        .selectedSection { background: rgba(255, 192, 0, 0.18); outline: 3px solid rgb(255, 192, 0); }
-        .canvasFocused { outline: 3px solid #ffea00; }
+        .selectedControl { background: transparent; outline: 3px solid var(--accent); outline-offset: 2px; }
+        .selectedSection { background: var(--accent); color: #000; outline: 0; }
+        .canvasFocused { outline: 3px solid var(--accent); }
     </style>
 </head>
 
@@ -133,15 +133,15 @@
         <div id="generatedBackgroundListItems"></div>
     </div>
     <div id="resultsList" class="ui-level-1">
-        <div class="thumbs-header"><span class="thumbs-title">Results</span> <button id="btnShowAllResults" class="btn">Show all</button></div>
+        <div class="thumbs-header"><span class="thumbs-title">History</span> <button id="btnShowAllResults" class="btn">Show all</button></div>
         <div id="resultsListItems"></div>
     </div>
     </main>
 
     <footer class="footer">
         <div class="footer__left">
-            <span>by Alexander Thurn </span>
-            <a href="https://alexander-thurn.de" target="_blank" rel="noopener">alexander-thurn.de</a>
+            <span>by</span>
+            <a href="https://alexander-thurn.de" target="_blank" rel="noopener">Alexander Thurn </a>
         </div>
         <div class="footer__right">
             <label class="ui-level-2"><input type="checkbox" id="toggleReducedMotion"> Reduced motion</label>
@@ -694,7 +694,7 @@
             resultsListItems.innerHTML = list.map(function(r){
                 var dl = '<a class="btn" href="' + r.url + '" download>Download</a>'
                 var rs = r.json ? '<button class="btn" onclick="restoreResultSettings(\'' + r.json + '\')">Restore</button>' : ''
-                return '<span class="assetItem"><a href="' + r.url + '" target="_blank"><img src="' + r.thumb + '"></a>' + dl + ' ' + rs + '</span>'
+                return '<span class="assetItem"><a href="' + r.url + '" target="_blank"><img src="' + r.thumb + '"></a>' + dl + ' ' + rs + '<button class="deleteBtn" title="Delete result" onclick="deleteGeneratedAsset(event,\'result\',\'' + r.url + '\')">×</button></span>'
             }).join("")
         }
         if (typeof btnShowAllResults !== 'undefined') {
